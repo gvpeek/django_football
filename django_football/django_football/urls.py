@@ -1,14 +1,16 @@
 from django.conf.urls import patterns, include, url
 from django.conf.urls.static import static
 from django.conf import settings
-from django.views.generic import TemplateView
+
+import core.views
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 admin.autodiscover()
 
 urlpatterns = patterns('',
-    url(r'^$', TemplateView.as_view(template_name='base.html')),
+    url(r'^$', core.views.index, name='index'),
+    url(r'universe/create/$', core.views.universe_create, name='universe_create'),
 
     # Examples:
     # url(r'^$', 'django_football.views.home', name='home'),

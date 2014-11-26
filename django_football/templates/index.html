@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+
+  <form action="{% url 'universe_create' %}" method="POST">
+    {% csrf_token %}
+    <input type="text" name="name" />
+    <input type="submit" name="submit" value="Create" />
+  </form>
+
+	<h1>Universes</h1>
+
+	{% if universe_list %}
+	    <ul>
+	    {% for universe in universe_list %}
+	        <li><a href="/football/league/list/{{ universe.id }}/">{{ universe.name }}</a></li>
+	    {% endfor %}
+	    </ul>
+	{% else %}
+	    <p>No universes created.</p>
+	{% endif %}
+
+{% endblock %}

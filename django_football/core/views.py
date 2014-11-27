@@ -1,3 +1,5 @@
+from random import randint
+
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.template import RequestContext, loader
@@ -20,8 +22,9 @@ def universe_create(request):
             name = form.cleaned_data['name']
         universe = Universe(name=name)
         universe.save()
+        year_create(universe, randint(1940,2010))
         # seed_universe_players(u,1500)
-        # create_year(u, randint(1940,2010))
+
         # # TODO move this to an initialize method
         # # TODO investigate better way of testing presence of data
         # try:
@@ -40,3 +43,10 @@ def universe_create(request):
         # create_league(request, u.id, choice(league_names), 'pro')
         
         return HttpResponse("Universe %s created." % name)
+        
+def year_create(universe, year=None):
+        year = Year(universe=universe,
+                         year=year)
+        year.save()
+        
+        return year

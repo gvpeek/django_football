@@ -19,3 +19,4 @@ class Year(models.Model):
     
     class Meta:
         unique_together = ('year','universe')
+        app_label = 'core'

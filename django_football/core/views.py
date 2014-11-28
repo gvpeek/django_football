@@ -6,6 +6,7 @@ from django.template import RequestContext, loader
 
 from .models import Universe, Year
 from .forms import CreateUniverseForm
+from people.views import seed_universe_players
 
 def index(request):
         universe_list = Universe.objects.all()
@@ -23,7 +24,7 @@ def universe_create(request):
         universe = Universe(name=name)
         universe.save()
         year_create(universe, randint(1940,2010))
-        # seed_universe_players(u,1500)
+        seed_universe_players(universe,1500)
 
         # # TODO move this to an initialize method
         # # TODO investigate better way of testing presence of data

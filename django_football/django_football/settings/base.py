@@ -1,6 +1,6 @@
 """Common settings and globals."""
 
-
+from os import listdir
 from os.path import abspath, basename, dirname, join, normpath
 from sys import path
 
@@ -18,6 +18,11 @@ SITE_NAME = basename(DJANGO_ROOT)
 # Add our project to our pythonpath, this way we don't need to type our project
 # name in our dotted import paths:
 path.append(DJANGO_ROOT)
+EXTRAS_DIR = join(SITE_ROOT, "extras")
+path.insert(0, EXTRAS_DIR)
+for node in listdir(EXTRAS_DIR):
+    if node.endswith('.egg') or node.endswith('.zip'):
+        path.insert(0, join(EXTRAS_DIR, node))
 ########## END PATH CONFIGURATION
 
 
@@ -196,6 +201,7 @@ DJANGO_APPS = (
 LOCAL_APPS = (
     'core',
     'people',
+    'teams',
 )
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

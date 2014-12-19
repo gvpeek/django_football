@@ -1,3 +1,6 @@
+import logging
+import time
+
 from random import randint, choice
 
 from django.shortcuts import render
@@ -24,8 +27,11 @@ def universe_create(request):
             name = form.cleaned_data['name']
         universe = Universe(name=name)
         universe.save()
+        logging.info("Universe {0} created".format(name))
         year_create(universe, randint(1940,2010))
-        seed_universe_players(universe,1500)
+        
+        start_time = time.time()
+        seed_universe_players(universe,700)
         
         initialize_team_source_data()
 

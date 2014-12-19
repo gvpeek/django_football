@@ -1,6 +1,20 @@
+import os
+import csv
+import json
+import pickle
+
+from random import choice, randint
+
 from django.core.exceptions import ObjectDoesNotExist
 
 import python_football
+
+from .models import Playbook, City, Nickname, Team
+from people import names
+from people.models import Coach, Player
+
+
+## Initialization Functions
 
 def create_playbook():
     playbook = Playbook(name='Basic',
@@ -9,7 +23,7 @@ def create_playbook():
 
 def initialize_cities():
     cities = []
-    with open(os.path.join('football','csv_source_files','metroareas.csv'), 'r') as cities_file:
+    with open(os.path.join('django_football','teams','csv_source_files','metroareas.csv'), 'r') as cities_file:
         cities_reader = csv.reader(cities_file,delimiter=',')
         for city in cities_reader:
             cities.append(City(name=city[0],
@@ -25,7 +39,7 @@ def initialize_cities():
 
 def initialize_nicknames():
     nicknames = [] 
-    with open(os.path.join('football','csv_source_files','nicknames.csv'), 'r') as nicknames_file:
+    with open(os.path.join('django_football','teams','csv_source_files','nicknames.csv'), 'r') as nicknames_file:
         nickname_reader = csv.reader(nicknames_file,delimiter=',')
         for nickname in nickname_reader:
             nicknames.append(Nickname(name=nickname[0],
@@ -51,6 +65,17 @@ def initialize_team_source_data():
         Nickname.objects.get(id=1)
     except ObjectDoesNotExist:
         initialize_nicknames()
+
+## Universe Creation Functions
+
+def determine_number_pro_teams(universe):
+    position_counts=[]
+    for position in ['qb', 'rb', 'wr', 'og', 'c', 'ot', 'dt', 'de', 'lb', 'cb', 's', 'k', 'p']: 
+        position_counts.append(Player.objects.filter(universe=universe, 
+                                                     position=position.upper(), 
+                                                     age__gte=23, 
+                                                     ratings__gte=70).count())
+    return sum(position_counts) / len(position_counts)
 
 def create_initial_universe_teams(universe, level):
     number_teams = determine_number_pro_teams(universe)
@@ -79,7 +104,7 @@ def create_initial_universe_teams(universe, level):
                   nickname=choice(nicknames),
                   human_control=False,
                   home_field_advantage=randint(1,3),
-                  draft_position_order = get_draft_position_order(),
+                  ## draft_position_order = get_draft_position_order(),
                   coach = coaches.pop(),
                   playbook = Playbook.objects.get(id=1)) for x in xrange(int(number_teams))]
     Team.objects.bulk_create(teams)

@@ -202,6 +202,7 @@ LOCAL_APPS = (
     'core',
     'people',
     'teams',
+    'leagues',
 )
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

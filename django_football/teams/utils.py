@@ -12,6 +12,7 @@ import python_football
 from .models import Playbook, City, Nickname, Team
 from people import names
 from people.models import Coach, Player
+from teams.models import get_draft_position_order
 
 
 ## Initialization Functions
@@ -104,7 +105,7 @@ def create_initial_universe_teams(universe, level):
                   nickname=choice(nicknames),
                   human_control=False,
                   home_field_advantage=randint(1,3),
-                  ## draft_position_order = get_draft_position_order(),
+                  draft_position_order = get_draft_position_order(),
                   coach = coaches.pop(),
                   playbook = Playbook.objects.get(id=1)) for x in xrange(int(number_teams))]
     Team.objects.bulk_create(teams)

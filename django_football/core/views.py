@@ -31,7 +31,7 @@ def universe_create(request):
         year_create(universe, randint(1940,2010))
         
         start_time = time.time()
-        seed_universe_players(universe,700)
+        seed_universe_players(universe,400)
         
         initialize_team_source_data()
 

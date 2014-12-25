@@ -11,6 +11,7 @@ from .models import Universe, Year
 from .forms import CreateUniverseForm
 from people.views import seed_universe_players
 from teams.utils import initialize_team_source_data, create_initial_universe_teams
+from leagues.views import create_initial_universe_league
 
 def index(request):
         universe_list = Universe.objects.all()
@@ -36,7 +37,7 @@ def universe_create(request):
         initialize_team_source_data()
 
         create_initial_universe_teams(universe, 'pro')
-        # create_league(request, u.id, choice(league_names), 'pro')
+        create_initial_universe_league(universe.id, choice(league_names), 'pro')
         
         universe_list = Universe.objects.all()
         template = loader.get_template('index.html')

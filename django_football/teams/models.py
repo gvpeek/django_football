@@ -43,7 +43,7 @@ class Team(models.Model):
         return unicode(self.city) + ' ' +unicode(self.nickname)
     
     universe = models.ForeignKey(Universe, related_name='team_universe')
-    city = models.CharField(max_length=60)
+    city = models.ForeignKey(City, related_name='team_city')
     nickname = models.CharField(max_length=60)
     human_control = models.BooleanField(default=False)
     home_field_advantage = models.IntegerField(default=1)

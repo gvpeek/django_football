@@ -12,6 +12,7 @@ from .forms import CreateUniverseForm
 from people.views import seed_universe_players, draft_players
 from teams.utils import initialize_team_source_data, create_initial_universe_teams
 from leagues.views import create_initial_universe_league, create_schedule
+from leagues.models import League
 
 def index(request):
     universe_list = Universe.objects.all()
@@ -56,3 +57,6 @@ def year_create(universe, year=None):
         
 def year_start(universe):
     draft_players(universe)
+    leagues = League.objects.filter(universe=universe)
+    for league in leagues:
+        create_schedule(league)

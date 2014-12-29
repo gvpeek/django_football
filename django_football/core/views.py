@@ -64,3 +64,15 @@ def year_start(universe):
     leagues = League.objects.filter(universe=universe)
     for league in leagues:
         create_schedule(league)
+        
+def show_leagues(request, universe_id):
+        universe = Universe.objects.get(id=universe_id)
+        leagues = League.objects.filter(universe=universe)
+        
+        template = loader.get_template('league_list.html')
+        context = RequestContext(request, {
+                'universe' : universe.name,
+                'league_list' : leagues,
+        })
+        
+        return HttpResponse(template.render(context))

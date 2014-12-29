@@ -4,6 +4,8 @@ from collections import deque
 from random import choice, randint, shuffle
 
 from django.shortcuts import render
+from django.http import HttpResponse
+from django.template import RequestContext, loader
 
 from .models import League, LeagueMembership, Game, Schedule
 from core.models import Universe, Year
@@ -354,18 +356,6 @@ def add_fields_to_team(team, game):
         team.coach.fg_dist_probabilities = json.loads(team.coach.fg_dist_probabilities)
         team.stats = StatBook()
 
-def show_leagues(request, universe_id):
-        universe = Universe.objects.get(id=universe_id)
-        leagues = League.objects.filter(universe=universe)
-        
-        template = loader.get_template('football/league_list.html')
-        context = RequestContext(request, {
-                'universe' : universe.name,
-                'league_list' : leagues,
-        })
-        
-        return HttpResponse(template.render(context))
-
 def show_league_detail(request, league_id):
         league = League.objects.get(id=league_id)
         membership_history = LeagueMembership.objects.filter(league=league)
@@ -373,7 +363,7 @@ def show_league_detail(request, league_id):
         for item in membership_history:
                 years.append(item.year)
         
-        template = loader.get_template('football/league_detail.html')
+        template = loader.get_template('league_detail.html')
         context = RequestContext(request, {
                 'league' : league,
                 'years' : years,

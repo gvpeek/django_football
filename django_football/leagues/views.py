@@ -67,8 +67,6 @@ def determine_nbr_div(nbr_teams):
     possible_div_sizes = [n for n in xrange(4,9) if not nbr_teams/n & 1]
     
     possible_nbr_divs = set(nbr_teams/x for x in possible_div_sizes)
-    
-    print 'poss_div_size', possible_div_sizes, 'poss_nbr_divs', possible_nbr_divs
    
     return choice(list(possible_nbr_divs))
 
@@ -78,7 +76,6 @@ def create_divisions(teams,nbr_div=None):
     if not nbr_div:
         nbr_div = determine_nbr_div(nbr_teams)
 
-    print nbr_div
     if not nbr_div:
         nbr_div = 1
 

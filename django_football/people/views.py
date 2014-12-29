@@ -1,4 +1,5 @@
 import json
+import logging
 
 from math import floor, pow
 from random import randint, choice, shuffle
@@ -73,6 +74,8 @@ def seed_universe_players(universe, players_per_year):
     '''
 
     # Main Logic
+    logger = logging.getLogger('django.request')
+    
     pl=[]
     for x in xrange(50):
         pl = [age_player_stub(player) for player in pl]        
@@ -101,6 +104,8 @@ def seed_universe_players(universe, players_per_year):
                                ratings = rating)])
 
     Player.objects.bulk_create(players)
+    
+    logger.info('{0} players created in universe {1}.'.format(len(players), universe.name))
 
 
 def determine_draft_needs(preference, roster):

@@ -2,6 +2,7 @@ import os
 import csv
 import json
 import pickle
+import logging
 
 from random import choice, randint
 
@@ -79,6 +80,8 @@ def determine_number_pro_teams(universe):
     return sum(position_counts) / len(position_counts)
 
 def create_initial_universe_teams(universe, level):
+    logger = logging.getLogger('django.request')
+    
     number_teams = determine_number_pro_teams(universe)
     if level == 'any':
         cities = City.objects.all()
@@ -109,3 +112,5 @@ def create_initial_universe_teams(universe, level):
                   coach = coaches.pop(),
                   playbook = Playbook.objects.get(id=1)) for x in xrange(int(number_teams))]
     Team.objects.bulk_create(teams)
+
+    logger.info('{0} teams created in universe {1}'.format(number_teams, universe.name))

@@ -23,17 +23,21 @@ def index(request):
     return HttpResponse(template.render(context))
 
 def universe_create(request):
+    logger = logging.getLogger('django.request')
+    
     league_names  = ['AFL', 'NFL', 'CFL', 'NAFL', 'UFL', 'USFL', 'NFA', 'WFL', 'IFL']
     form = CreateUniverseForm(request.POST)
     if form.is_valid():
         name = form.cleaned_data['name']
     universe = Universe(name=name)
     universe.save()
-    logging.info("Universe {0} created".format(name))
+    logger.info("Universe {0} created".format(name))
     year_create(universe, randint(1940,2010))
     
     start_time = time.time()
     seed_universe_players(universe,400)
+    elapsed_time = time.time() - start_time
+    logger.info("Universe {0} players seeded in {1} seconds".format(name, elapsed_time))
     
     initialize_team_source_data()
 

@@ -3,6 +3,13 @@
 
 	{% if league %}
 		<h1>{{ league.name }}</h1>
+    {% if league_teams %}
+    <ul>
+      {% for team in league_teams %}
+      <li>{{ team.city }} {{ team.nickname }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
 		{% if years %}
 		<ul>
 			{% for year in years %}

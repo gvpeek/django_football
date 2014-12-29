@@ -367,6 +367,7 @@ def show_league_detail(request, league_id):
         context = RequestContext(request, {
                 'league' : league,
                 'years' : years,
+                'league_teams' : [entry.team for entry in membership_history],
         })
         
         return HttpResponse(template.render(context))

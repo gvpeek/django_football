@@ -9,46 +9,50 @@ from django.template import RequestContext, loader
 
 from .models import Universe, Year
 from .forms import CreateUniverseForm
-from people.views import seed_universe_players
+from people.views import seed_universe_players, draft_players
 from teams.utils import initialize_team_source_data, create_initial_universe_teams
-from leagues.views import create_initial_universe_league
+from leagues.views import create_initial_universe_league, create_schedule
 
 def index(request):
-        universe_list = Universe.objects.all()
-        template = loader.get_template('index.html')
-        context = RequestContext(request, {
-                'universe_list' : universe_list,
-        })
-        return HttpResponse(template.render(context))
+    universe_list = Universe.objects.all()
+    template = loader.get_template('index.html')
+    context = RequestContext(request, {
+            'universe_list' : universe_list,
+    })
+    return HttpResponse(template.render(context))
 
 def universe_create(request):
-        league_names  = ['AFL', 'NFL', 'CFL', 'NAFL', 'UFL', 'USFL', 'NFA', 'WFL', 'IFL']
-        form = CreateUniverseForm(request.POST)
-        if form.is_valid():
-            name = form.cleaned_data['name']
-        universe = Universe(name=name)
-        universe.save()
-        logging.info("Universe {0} created".format(name))
-        year_create(universe, randint(1940,2010))
-        
-        start_time = time.time()
-        seed_universe_players(universe,400)
-        
-        initialize_team_source_data()
+    league_names  = ['AFL', 'NFL', 'CFL', 'NAFL', 'UFL', 'USFL', 'NFA', 'WFL', 'IFL']
+    form = CreateUniverseForm(request.POST)
+    if form.is_valid():
+        name = form.cleaned_data['name']
+    universe = Universe(name=name)
+    universe.save()
+    logging.info("Universe {0} created".format(name))
+    year_create(universe, randint(1940,2010))
+    
+    start_time = time.time()
+    seed_universe_players(universe,400)
+    
+    initialize_team_source_data()
 
-        create_initial_universe_teams(universe, 'pro')
-        create_initial_universe_league(universe.id, choice(league_names), 'pro')
-        
-        universe_list = Universe.objects.all()
-        template = loader.get_template('index.html')
-        context = RequestContext(request, {
-                'universe_list' : universe_list,
-        })
-        return HttpResponse(template.render(context))
+    create_initial_universe_teams(universe, 'pro')
+    create_initial_universe_league(universe.id, choice(league_names), 'pro')
+    year_start(universe)
+    
+    universe_list = Universe.objects.all()
+    template = loader.get_template('index.html')
+    context = RequestContext(request, {
+            'universe_list' : universe_list,
+    })
+    return HttpResponse(template.render(context))
         
 def year_create(universe, year=None):
-        year = Year(universe=universe,
-                         year=year)
-        year.save()
+    year = Year(universe=universe,
+                year=year)
+    year.save()
+    
+    return year
         
-        return year
+def year_start(universe):
+    draft_players(universe)

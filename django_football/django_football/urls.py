@@ -4,6 +4,7 @@ from django.conf import settings
 
 import core.views
 import leagues.views
+import teams.views
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -16,6 +17,8 @@ urlpatterns = patterns('',
     
     url(r'league/(?P<league_id>\d+)/$', leagues.views.show_league_detail, name='show_league_detail'),
     url(r'league/standings/(?P<league_id>\d+)/(?P<year>\d+)/$', leagues.views.show_standings, name='show_league_standings'),
+    
+    url(r'team/roster/(?P<team_id>\d+)/(?P<year>\d+)/$', teams.views.show_roster, name='show_team_roster'),
 
     # Examples:
     # url(r'^$', 'django_football.views.home', name='home'),

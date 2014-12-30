@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+	{% if league_name and year %}
+		<h1>{{ league_name }} - {{ year }}</h1>
+	{% endif %}
+
+	{% if standings %}
+		<div id="standings_display">
+      <h2>Standings</h2>
+			{% for conference in standings %}
+				{% for division in conference %}
+					<table class="standings">
+						<thead>
+							<tr>
+								<th></th>
+								<th>W</th>
+								<th>L</th>
+								<th>T</th>
+								<th>Pct.</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for team_stat in division %}
+							<tr>
+								<td><a href="/football/team/roster/{{ team_stat.team.id }}/{{ team_stat.year }}">{{ team_stat.team }}</a></td>
+								<td>{{ team_stat.wins }}</td>
+								<td>{{ team_stat.losses }}</td>
+								<td>{{ team_stat.ties }}</td>
+								<td>{{ team_stat.pct|floatformat:3 }}</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+						
+					</table>
+				{% endfor %}
+			{% endfor %}
+		</div>
+	
+		<div id="schedule_display">
+      <h2>Schedule</h2>
+      {% for week, games in schedule.items %}
+        <h3>Week {{ week }}</h3>
+  			{% for game in games %}
+  			<table class="game_display">
+  				{% for team in game %}
+  				<tr>
+  					{% for stat in team %}
+  						<td>{{ stat }}</td>
+  					{% endfor %}
+  				</tr>
+  				{% endfor %}	
+  			</table>
+  			{% endfor %}
+      {% endfor %}
+		</div>
+	
+	{% else %}
+		<p>No standings for this league.</p>
+	{% endif %}
+
+{% endblock %}
+				
+					

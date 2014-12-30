@@ -1,1 +1,7 @@
-/*! project specific CSS goes here. */
+td {
+  padding-right: 2em;
+}
+
+.game_display {
+  margin-bottom: 1em;
+}

@@ -1,6 +1,6 @@
 import operator
 
-from collections import deque
+from collections import deque, OrderedDict
 from random import choice, randint, shuffle
 
 from django.shortcuts import render
@@ -10,6 +10,7 @@ from django.template import RequestContext, loader
 from .models import League, LeagueMembership, Game, Schedule
 from core.models import Universe, Year
 from teams.models import Team, Roster
+from stats.models import TeamStats, GameStats
 
 
 def create_initial_universe_league(universe_id,
@@ -56,6 +57,10 @@ def create_initial_universe_league(universe_id,
                                                   conference=conf_nbr,
                                                   division=div_nbr)
                             lm.save()
+                            ts = TeamStats(universe=universe,
+                                           year=year,
+                                           team=team)
+                            ts.save()
                     div_nbr+=1
             conf_nbr+=1
 
@@ -397,43 +402,46 @@ def get_sorted_standings(league, year):
     return sorted_standings
 
 def show_standings(request, league_id, year):
-        league = League.objects.get(id=league_id)
-        year_obj = Year.objects.get(universe=league.universe, year=year)
-        
-        sorted_standings = get_sorted_standings(league, year_obj)
+    league = League.objects.get(id=league_id)
+    year_obj = Year.objects.get(universe=league.universe, year=year)
+    
+    sorted_standings = get_sorted_standings(league, year_obj)
 
-        schedule_results=[]
-        try:
-            games = Game.objects.filter(universe=league.universe, year=year_obj).order_by('id')
-            for idx, game in enumerate(games):
-                    try:
-                        home_stats = GameStats.objects.get(universe=game.universe,
-                                                             year=game.year,
-                                                             game=game,
-                                                             team=game.home_team)
-                        away_stats = GameStats.objects.get(universe=game.universe,
-                                                             year=game.year,
-                                                             game=game,
-                                                             team=game.away_team)
-                        away=[]
-                        away.extend([away_stats.team])
-                        away.extend(literal_eval(away_stats.score_by_period))
-                        away.extend([away_stats.score])
-                        home=[]
-                        home.extend([home_stats.team])
-                        home.extend(literal_eval(home_stats.score_by_period))
-                        home.extend([home_stats.score])
-                        schedule_results.append([away,home])
-                    except:
-                        schedule_results.append([[game.away_team],[game.home_team]])
-        except Exception, e:
-            print 'Error generating standings:' , e
+    schedule_results=OrderedDict()
+    try:
+        sched = Schedule.objects.filter(universe=league.universe, year=year_obj).order_by('week', 'game')
+        for entry in sched:
+            if entry.week not in schedule_results:
+                schedule_results[entry.week] = []
+            try:
+                home_stats = GameStats.objects.get(universe=entry.game.universe,
+                                                   year=entry.game.year,
+                                                   game=entry.game,
+                                                   team=entry.game.home_team)
+                away_stats = GameStats.objects.get(universe=entry.game.universe,
+                                                   year=entry.game.year,
+                                                   game=entry.game,
+                                                   team=entry.game.away_team)
+                away=[]
+                away.extend([away_stats.team])
+                away.extend(literal_eval(away_stats.score_by_period))
+                away.extend([away_stats.score])
+                home=[]
+                home.extend([home_stats.team])
+                home.extend(literal_eval(home_stats.score_by_period))
+                home.extend([home_stats.score])
+                schedule_results[entry.week].append([away,home])
+            except:
+                schedule_results[entry.week].append([[entry.game.away_team],[entry.game.home_team]])
+    except Exception, e:
+        print 'Error generating standings:' , e
 
-        template = loader.get_template('football/standings.html')
-        context = RequestContext(request, {
-                'league_name' : league.name,
-                'year' : year,
-                'standings' : sorted_standings,
-                'schedule' : schedule_results,
-        })
-        return HttpResponse(template.render(context))
+    print schedule_results
+    template = loader.get_template('standings.html')
+    context = RequestContext(request, {
+            'league_name' : league.name,
+            'year' : year,
+            'standings' : sorted_standings,
+            'schedule' : schedule_results,
+    })
+    return HttpResponse(template.render(context))

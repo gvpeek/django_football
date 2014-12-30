@@ -15,6 +15,7 @@ urlpatterns = patterns('',
     url(r'universe/detail/(?P<universe_id>\d+)/$', core.views.show_leagues, name='show_leagues'),
     
     url(r'league/(?P<league_id>\d+)/$', leagues.views.show_league_detail, name='show_league_detail'),
+    url(r'league/standings/(?P<league_id>\d+)/(?P<year>\d+)/$', leagues.views.show_standings, name='show_league_standings'),
 
     # Examples:
     # url(r'^$', 'django_football.views.home', name='home'),

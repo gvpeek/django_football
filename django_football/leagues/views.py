@@ -1,16 +1,24 @@
+import json
+import pickle
 import operator
 
 from collections import deque, OrderedDict
 from random import choice, randint, shuffle
+from ast import literal_eval
 
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.template import RequestContext, loader
+from django.core.exceptions import ObjectDoesNotExist
+
+import python_football
 
 from .models import League, LeagueMembership, Game, Schedule
 from core.models import Universe, Year
-from teams.models import Team, Roster
+from teams.models import Team, Roster, Playbook
 from stats.models import TeamStats, GameStats
+from stats.utils import update_stats
+# from people.views import practice_plays, call_play, choose_rush_pass_play
 
 
 def create_initial_universe_league(universe_id,
@@ -183,14 +191,62 @@ def create_schedule(league):
             db_schedule.save()
 
 def play_game(id, playoff=False):
-    g = Game.objects.get(id=id)
-    add_fields_to_team(g.home_team, g)
-    add_fields_to_team(g.away_team, g)
-    game = GameDay(home_team=g.home_team, 
-                   away_team=g.away_team, 
-                   use_overtime=g.use_overtime)
+    db_game = Game.objects.get(id=id)
+    home_team = prepare_team_for_game(db_game.home_team, db_game.away_team, db_game)
+    away_team = prepare_team_for_game(db_game.away_team, db_game.home_team, db_game)
+    game = python_football.new_game(home_team=home_team, 
+                                    away_team=away_team, 
+                                    use_overtime=db_game.use_overtime)
     game.start_game()
-    update_stats(g, game, playoff)
+    update_stats(db_game, game, playoff)
+    
+def prepare_team_for_game(team, opponent, game):
+    roster = Roster.objects.get(universe=game.universe,
+                                year=game.year,
+                                team=team)
+    skills = {'qb': roster.qb_rating,
+                     'rb': roster.rb_rating,
+                     'wr': roster.wr_rating,
+                     'ol': ((roster.og_rating + roster.c_rating + roster.ot_rating) / 3),
+                     'dl': ((roster.dt_rating + roster.de_rating) / 2),
+                     'lb': roster.lb_rating,
+                     'cb': roster.cb_rating,
+                     's': roster.s_rating,
+                     'p': roster.p_rating,
+                     'k': roster.k_rating,
+                     'sp': roster.wr_rating}
+    primary_color = team.primary_color
+    secondary_color = team.secondary_color
+    ## This is wonky. We have a JSON serialized object in the database, which is really a pickled object.
+    ## TODO: investigate a better way to do this
+    playbook = Playbook.objects.get(id=1)
+    playbook = pickle.loads(json.loads(playbook.plays))
+    
+    coach = python_football.new_coach(skill=team.coach.skill)
+    coach.practice_plays(playbook,skills)
+    # team.coach.play_probabilities = playcalls.get('play_probabilities')
+    # team.coach.fg_dist_probabilities = playcalls.get('fg_probabilities')
+    # team.coach.call_play = call_play
+    # team.coach.choose_rush_pass_play = choose_rush_pass_play
+    stats = python_football.new_statbook()
+    team = python_football.new_team(city=team.city.name,
+                                    nickname=team.nickname,
+                                    skills=skills,
+                                    primary_color=primary_color,
+                                    secondary_color=secondary_color,
+                                    playbook=playbook,
+                                    stats=stats,
+                                    coach=coach,
+                                    home_field_advantage=team.home_field_advantage)
+    
+    return team
+
+def play_league_game(request, game_id):
+    play_game(game_id)
+    game = Game.objects.get(id=game_id)
+    schedule_entry = Schedule.objects.get(game=game)
+    schedule_entry.played = True
+    schedule_entry.save()
 
 def play_unplayed_games(league, playoff=False):
     year = Year.objects.get(universe=league.universe,
@@ -333,34 +389,7 @@ def play_playoffs(league):
     playoff_teams = determine_playoff_field(league)
     while generate_playoff_schedule(league):
         play_unplayed_games(league,playoff=True)
-              
-def add_fields_to_team(team, game):
-        roster = Roster.objects.get(universe=game.universe,
-                                    year=game.year,
-                                    team=team)
-        team.skills = {'qb': roster.qb_rating,
-                         'rb': roster.rb_rating,
-                         'wr': roster.wr_rating,
-                         'ol': ((roster.og_rating + roster.c_rating + roster.ot_rating) / 3),
-                         'dl': ((roster.dt_rating + roster.de_rating) / 2),
-                         'lb': roster.lb_rating,
-                         'cb': roster.cb_rating,
-                         's': roster.s_rating,
-                         'p': roster.p_rating,
-                         'k': roster.k_rating,
-                         'sp': roster.wr_rating}
-        team.primary_color = (randint(0,255),randint(0,255),randint(0,255))
-        team.secondary_color = (randint(0,255),randint(0,255),randint(0,255))
-        p = Playbook.objects.get(id=1)
-        p = json.loads(p.plays)
-        p = pickle.loads(p)
-        team.plays = p
-        team.coach.practice_plays(team.coach,team.plays,team.skills)
-        team.coach.save()
-        team.coach.play_probabilities = json.loads(team.coach.play_probabilities)
-        team.coach.fg_dist_probabilities = json.loads(team.coach.fg_dist_probabilities)
-        team.stats = StatBook()
-
+             
 def show_league_detail(request, league_id):
         league = League.objects.get(id=league_id)
         membership_history = LeagueMembership.objects.filter(league=league)
@@ -406,13 +435,18 @@ def show_standings(request, league_id, year):
     year_obj = Year.objects.get(universe=league.universe, year=year)
     
     sorted_standings = get_sorted_standings(league, year_obj)
-
+    
+    schedule_id = None
+    next_game_id = None
     schedule_results=OrderedDict()
     try:
         sched = Schedule.objects.filter(universe=league.universe, year=year_obj).order_by('week', 'game')
+        schedule_id = sched[0].id
         for entry in sched:
             if entry.week not in schedule_results:
                 schedule_results[entry.week] = []
+            if not entry.played and not next_game_id:
+                next_game_id = entry.game.id
             try:
                 home_stats = GameStats.objects.get(universe=entry.game.universe,
                                                    year=entry.game.year,
@@ -430,9 +464,14 @@ def show_standings(request, league_id, year):
                 home.extend([home_stats.team])
                 home.extend(literal_eval(home_stats.score_by_period))
                 home.extend([home_stats.score])
-                schedule_results[entry.week].append([away,home])
-            except:
-                schedule_results[entry.week].append([[entry.game.away_team],[entry.game.home_team]])
+                schedule_results[entry.week].append({'id' : entry.game.id, 
+                                                     'played' : entry.played, 
+                                                     'teams' : [away,home]})
+            except ObjectDoesNotExist, e:
+                print e
+                schedule_results[entry.week].append({'id' : entry.game.id, 
+                                                     'played' : entry.played, 
+                                                     'teams' : [[entry.game.away_team], [entry.game.home_team]]})
     except Exception, e:
         print 'Error generating standings:' , e
 
@@ -443,5 +482,7 @@ def show_standings(request, league_id, year):
             'year' : year,
             'standings' : sorted_standings,
             'schedule' : schedule_results,
+            'schedule_id' : schedule_id,
+            'next_game_id' : next_game_id
     })
     return HttpResponse(template.render(context))

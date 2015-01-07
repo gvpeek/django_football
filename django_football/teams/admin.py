@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from teams.models import Team, City, Nickname, Roster
+from teams.models import Team, City, Nickname, Roster, Playbook
 
 class TeamAdmin(admin.ModelAdmin):
     list_display = ('city', 'nickname', 'human_control', 'home_field_advantage', 'coach', 'draft_position_order', 'universe')
@@ -27,8 +27,12 @@ class RosterAdmin(admin.ModelAdmin):
                     'k', 'k_age', 'k_rating', 
                     'p', 'p_age', 'p_rating', 
                     'universe')
+
+class PlaybookAdmin(admin.ModelAdmin):
+    list_display = ('name', 'plays')
                     
 admin.site.register(Team, TeamAdmin)
 admin.site.register(City, CityAdmin)
 admin.site.register(Nickname, NicknameAdmin)
 admin.site.register(Roster, RosterAdmin)
+admin.site.register(Playbook, PlaybookAdmin)

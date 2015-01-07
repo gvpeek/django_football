@@ -18,7 +18,7 @@ class GameAdmin(admin.ModelAdmin):
     list_display = ('away_team', 'home_team', 'year', 'universe') 
 
 class ScheduleAdmin(admin.ModelAdmin):
-    list_display = ('week', 'game_number', 'game', 'year', 'league', 'universe') 
+    list_display = ('week', 'game_number', 'game', 'played', 'year', 'league', 'universe') 
     
 admin.site.register(League, LeagueAdmin)
 admin.site.register(LeagueMembership, LeagueMembershipAdmin)

@@ -6,7 +6,7 @@ from collections import deque, OrderedDict
 from random import choice, randint, shuffle
 from ast import literal_eval
 
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.template import RequestContext, loader
 from django.core.exceptions import ObjectDoesNotExist
@@ -247,6 +247,8 @@ def play_league_game(request, game_id):
     schedule_entry = Schedule.objects.get(game=game)
     schedule_entry.played = True
     schedule_entry.save()
+    
+    return redirect('show_game_stats', game_id=game_id)
 
 def play_unplayed_games(league, playoff=False):
     year = Year.objects.get(universe=league.universe,
@@ -468,14 +470,12 @@ def show_standings(request, league_id, year):
                                                      'played' : entry.played, 
                                                      'teams' : [away,home]})
             except ObjectDoesNotExist, e:
-                print e
                 schedule_results[entry.week].append({'id' : entry.game.id, 
                                                      'played' : entry.played, 
                                                      'teams' : [[entry.game.away_team], [entry.game.home_team]]})
     except Exception, e:
         print 'Error generating standings:' , e
 
-    print schedule_results
     template = loader.get_template('standings.html')
     context = RequestContext(request, {
             'league_name' : league.name,

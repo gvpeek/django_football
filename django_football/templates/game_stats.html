@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load stats_extras %}
+
+{% block content %}
+
+<a href='/league/standings/{{ universe_id }}/{{ year }}'>Standings</a>
+
+<table class="game_display">
+	<tr>
+    <td>{{ away_team_stats.team.city }} {{ away_team_stats.team.nickname }}</td>
+		{% for score in away_score_by_period %}
+			<td>{{ score }}</td>
+		{% endfor %}
+	</tr>
+	<tr>
+    <td>{{ home_team_stats.team.city }} {{ home_team_stats.team.nickname }}</td>
+		{% for score in home_score_by_period %}
+			<td>{{ score }}</td>
+		{% endfor %}
+	</tr>
+</table>
+
+<table>
+  <tr>
+    <th>{{ away_team_stats.team.city }}</th>
+    <th></th>
+    <th>{{ home_team_stats.team.city }}</th>
+  </tr>
+{% for stat in display_stats %}
+  <tr>
+    <td>{{ away_team_stats|getitem:stat }}</td>
+    <td>{{ stat }}</td>
+    <td>{{ home_team_stats|getitem:stat }}</td>
+  </tr>
+{% endfor %}
+</table>
+{% endblock %}

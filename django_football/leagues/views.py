@@ -10,10 +10,11 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.template import RequestContext, loader
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Max
 
 import python_football
 
-from .models import League, LeagueMembership, Game, Schedule
+from .models import League, LeagueMembership, Game, Schedule, PlayoffTeams, Champions
 from core.models import Universe, Year
 from teams.models import Team, Roster, Playbook
 from stats.models import TeamStats, GameStats
@@ -74,9 +75,6 @@ def create_initial_universe_league(universe_id,
 
     league.number_playoff_teams = randint((div_nbr+1),(len(available_teams)/2))
     league.save()
-
-    # play_season(league)
-    # play_playoffs(league)
 
 def determine_nbr_div(nbr_teams):
     possible_div_sizes = [n for n in xrange(4,9) if not nbr_teams/n & 1]
@@ -224,10 +222,6 @@ def prepare_team_for_game(team, opponent, game):
     
     coach = python_football.new_coach(skill=team.coach.skill)
     coach.practice_plays(playbook,skills)
-    # team.coach.play_probabilities = playcalls.get('play_probabilities')
-    # team.coach.fg_dist_probabilities = playcalls.get('fg_probabilities')
-    # team.coach.call_play = call_play
-    # team.coach.choose_rush_pass_play = choose_rush_pass_play
     stats = python_football.new_statbook()
     team = python_football.new_team(city=team.city.name,
                                     nickname=team.nickname,
@@ -241,14 +235,50 @@ def prepare_team_for_game(team, opponent, game):
     
     return team
 
+def scheduled_games_remaining(league):
+    return Schedule.objects.filter(league=league,
+                                    played=False).count()
+    
+
+def play_game_batch(schedule_list):
+    for entry in schedule_list:
+        play_game(entry.game.id)
+        entry.played=True
+        entry.save()
+        
+    if entry:
+        league=entry.league
+        
+    if not scheduled_games_remaining(league):
+        determine_playoff_field(league)
+        generate_playoff_schedule(league)
+        
 def play_league_game(request, game_id):
-    play_game(game_id)
     game = Game.objects.get(id=game_id)
     schedule_entry = Schedule.objects.get(game=game)
-    schedule_entry.played = True
-    schedule_entry.save()
+    
+    play_game_batch([schedule_entry])
     
     return redirect('show_game_stats', game_id=game_id)
+
+def play_league_week(request, league_id, week):
+    league = League.objects.get(id=league_id)
+    schedule = Schedule.objects.filter(league=league,
+                                    week=week,
+                                    played=False)
+                                    
+    play_game_batch(schedule)
+    
+    return redirect('show_league_standings', league_id=league.id)
+
+def play_league_remaining(request, league_id):
+    league = League.objects.get(id=league_id)
+    schedule = Schedule.objects.filter(league=league,
+                                    played=False)
+                                    
+    play_game_batch(schedule)
+    
+    return redirect('show_league_standings', league_id=league.id)
 
 def play_unplayed_games(league, playoff=False):
     year = Year.objects.get(universe=league.universe,
@@ -432,10 +462,12 @@ def get_sorted_standings(league, year):
 
     return sorted_standings
 
-def show_standings(request, league_id, year):
+def show_standings(request, league_id, year=None):
     league = League.objects.get(id=league_id)
-    year_obj = Year.objects.get(universe=league.universe, year=year)
-    
+    if year:
+        year_obj = Year.objects.get(universe=league.universe, year=year)
+    else:
+        year_obj = Year.objects.get(universe=league.universe, current_year=True)
     sorted_standings = get_sorted_standings(league, year_obj)
     
     schedule_id = None
@@ -458,27 +490,32 @@ def show_standings(request, league_id, year):
                                                    year=entry.game.year,
                                                    game=entry.game,
                                                    team=entry.game.away_team)
-                away=[]
-                away.extend([away_stats.team])
-                away.extend(literal_eval(away_stats.score_by_period))
-                away.extend([away_stats.score])
-                home=[]
-                home.extend([home_stats.team])
-                home.extend(literal_eval(home_stats.score_by_period))
-                home.extend([home_stats.score])
+                away={}
+                away['team'] = away_stats.team
+                away['period_scores'] = literal_eval(away_stats.score_by_period)
+                away['final'] = away_stats.score
+                home={}
+                home['team'] = home_stats.team
+                home['period_scores'] = literal_eval(home_stats.score_by_period)
+                home['final'] = home_stats.score
                 schedule_results[entry.week].append({'id' : entry.game.id, 
                                                      'played' : entry.played, 
                                                      'teams' : [away,home]})
             except ObjectDoesNotExist, e:
                 schedule_results[entry.week].append({'id' : entry.game.id, 
                                                      'played' : entry.played, 
-                                                     'teams' : [[entry.game.away_team], [entry.game.home_team]]})
+                                                     'teams' : [{'team' : entry.game.away_team,
+                                                                 'period_score' : '',
+                                                                 'final' : ''}, 
+                                                                {'team' : entry.game.home_team,
+                                                                 'period_score' : '',
+                                                                 'final' : ''}]})
     except Exception, e:
         print 'Error generating standings:' , e
 
     template = loader.get_template('standings.html')
     context = RequestContext(request, {
-            'league_name' : league.name,
+            'league' : league,
             'year' : year,
             'standings' : sorted_standings,
             'schedule' : schedule_results,

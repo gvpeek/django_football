@@ -17,10 +17,13 @@ urlpatterns = patterns('',
     url(r'universe/detail/(?P<universe_id>\d+)/$', core.views.show_leagues, name='show_leagues'),
     
     url(r'league/(?P<league_id>\d+)/$', leagues.views.show_league_detail, name='show_league_detail'),
-    url(r'league/standings/(?P<league_id>\d+)/(?P<year>\d+)/$', leagues.views.show_standings, name='show_league_standings'),
+    url(r'league/standings/(?P<league_id>\d+)/$', leagues.views.show_standings, name='show_league_standings'),
+    url(r'league/standings/(?P<league_id>\d+)/(?P<year>\d+)/$', leagues.views.show_standings, name='show_league_standings_year'),
     url(r'league/play_game/(?P<game_id>\d+)/$', leagues.views.play_league_game, name='play_league_game'),
+    url(r'league/play_week/(?P<league_id>\d+)/(?P<week>\d+)/$', leagues.views.play_league_week, name='play_league_week'),
+    url(r'league/play_remaining/(?P<league_id>\d+)/$', leagues.views.play_league_remaining, name='play_league_remaining'),
     
-    url(r'team/roster/(?P<team_id>\d+)/(?P<year>\d+)/$', teams.views.show_roster, name='show_team_roster'),
+    url(r'team/detail/(?P<team_id>\d+)/(?P<year>\d+)/$', teams.views.show_team_detail, name='show_team_detail'),
     
     url(r'stats/game/(?P<game_id>\d+)/$', stats.views.game_stats, name='show_game_stats'),
     

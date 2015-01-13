@@ -3,6 +3,7 @@ from ast import literal_eval
 from django.core.exceptions import ObjectDoesNotExist
 
 from .models import GameStats, TeamStats, PlayoffTeamStats
+from leagues.models import PlayoffTeams
 
 def get_game_stats(universe, year, game, team):
     try:
@@ -51,6 +52,7 @@ def update_stats(db_game, game, playoff=False):
     stats = [[home_db_game_stats, home_db_team_stats, home_game_stats],
              [away_db_game_stats, away_db_team_stats, away_game_stats]]
                      
+    loser = None
     if home_game_stats['score'] == away_game_stats['score']:
         home_db_team_stats.ties += 1
         away_db_team_stats.ties += 1
@@ -61,11 +63,13 @@ def update_stats(db_game, game, playoff=False):
         away_db_team_stats.losses += 1
         home_db_game_stats.outcome = 'W'
         away_db_game_stats.outcome = 'L'
+        loser = db_game.away_team
     else:
         home_db_team_stats.losses += 1
         away_db_team_stats.wins += 1
         home_db_game_stats.outcome = 'L'
         away_db_game_stats.outcome = 'W'
+        loser = db_game.home_team
 
     home_db_team_stats.opp += away_game_stats['score']
     away_db_team_stats.opp += home_game_stats['score']
@@ -91,3 +95,5 @@ def update_stats(db_game, game, playoff=False):
         db_team_stats.diff = db_team_stats.score - db_team_stats.opp
         db_game_stats.save()
         db_team_stats.save()
+        
+    return loser

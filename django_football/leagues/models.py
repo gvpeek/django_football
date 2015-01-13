@@ -55,6 +55,7 @@ class Schedule(models.Model):
     game = models.ForeignKey(Game, related_name='schedule_game')
     week = models.IntegerField()
     game_number = models.IntegerField()
+    playoff_game = models.BooleanField(default=False)
     played = models.BooleanField(default=False)
 
 class PlayoffTeams(models.Model):

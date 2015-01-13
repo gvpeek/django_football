@@ -2,8 +2,8 @@
 
 {% block content %}
 
-	{% if league_name and year %}
-		<h1>{{ league_name }} - {{ year }}</h1>
+	{% if league.name and year %}
+		<h1>{{ league.name }} - {{ year }}</h1>
 	{% endif %}
 
 	{% if standings %}
@@ -24,7 +24,7 @@
 						<tbody>
 							{% for team_stat in division %}
 							<tr>
-								<td><a href="/team/roster/{{ team_stat.team.id }}/{{ team_stat.year }}">{{ team_stat.team }}</a></td>
+								<td><a href="/team/detail/{{ team_stat.team.id }}/{{ team_stat.year }}">{{ team_stat.team }}</a></td>
 								<td>{{ team_stat.wins }}</td>
 								<td>{{ team_stat.losses }}</td>
 								<td>{{ team_stat.ties }}</td>
@@ -41,20 +41,34 @@
 		<div id="schedule_display">
       <h2>Schedule</h2>
       {% for week, games in schedule.items %}
-        <h3>Week {{ week }}</h3>
+        <h3 class="week">Week {{ week }}</h3>
   			{% for game in games %}
-    			<table class="game_display">
-  				{% for team in game.teams %}
-    				<tr>
-    					{% for stat in team %}
-    						<td>{{ stat }}</td>
-    					{% endfor %}
-    				</tr>
-  				{% endfor %}	
-    			</table>
-          {% if next_game_id == game.id %}
-            <a href="/league/play_game/{{ game.id }}">Play Game</a>
-          {% endif %}
+          <div class="game">
+            <div class="game_standings_box">
+        			<table class="game_display">
+      				{% for team in game.teams %}
+        				<tr>
+                  <td class="box_team">{{ team.team }}</td>
+        					{% for stat in team.period_scores %}
+        						<td class="box_stat">{{ stat }}</td>
+        					{% endfor %}
+                  <td class="box_final">{{ team.final }}</td>
+        				</tr>
+      				{% endfor %}	
+        			</table>
+            </div>
+            <div class="action">
+              {% if next_game_id == game.id %}
+                <p id="action_indicator">Play
+                  <a href="/league/play_game/{{ game.id }}">Game</a> | 
+                  <a href="/league/play_week/{{ league.id }}/{{ week }}">Week</a> | 
+                  <a href="/league/play_remaining/{{ league.id }}/">Remaining</a> | 
+                </p>
+              {% elif game.teams.0.period_scores %}
+                <a href="stats/game/{{ game.id }}">Show Stats</a>
+              {% endif %}
+            </div>
+          </div>
   			{% endfor %}
       {% endfor %}
 		</div>

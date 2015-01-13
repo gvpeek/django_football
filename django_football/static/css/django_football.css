@@ -5,3 +5,29 @@ td, th {
 .game_display {
   margin-bottom: 1em;
 }
+
+.week {
+  clear : both;
+}
+
+.action {
+  float: left;
+}
+
+.game_standings_box {
+  clear: left;
+  float: left;
+}
+
+.box_team {
+  width: 15em;
+}
+
+.box_stat, .box_final {
+    text-align: right;
+    width: 3em;
+}
+
+.box_final {
+  font-weight: bold;
+}

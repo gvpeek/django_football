@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+
+	<h1>{{ team.city }} {{ team.nickname }}</h1>
+
+  <div id="team_roster">
+    <h2>Roster</h2>
+  	{% if roster %}
+  		<table>
+  			<thead>
+  				<tr>
+  					<th>Name</th>
+  					<th>Position</th>
+  					<th>Age</th>
+  					<th>Rating</th>
+  				</tr>
+  			</thead>
+  			<tbody>
+  				{% for player, age, rating in roster %}
+  				<tr>
+  					<td>{{ player.last_name }}, {{ player.first_name }}</td>
+  					<td>{{ player.position }}</td>
+  					<td>{{ age }}</td>
+  					<td>{{ rating }}</td>
+  				</tr>
+  				{% endfor %}
+  			</tbody>
+  		</table>
+  	{% else %}
+  		<p>No players on this team.</p>
+  	{% endif %}
+  </div>
+	
+  <div id="team_schedule">
+    <h2>Schedule</h2>
+    {% if team_schedule %}
+      <table>
+        <thead>
+          <tr>
+            <th>Week</th>
+            <th>Opponent</th>
+            <th>Outcome</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for week, game in team_schedule.items %}
+          <tr>
+            <td>{{ week }}</td>
+            <td>{{ game.opponent }}</td>
+            <td>{{ game.outcome }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+  	{% else %}
+  		<p>No players on this team.</p>
+  	{% endif %}
+  </div>
+  
+{% endblock %}

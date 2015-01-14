@@ -3,15 +3,16 @@ import time
 
 from random import randint, choice
 
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.template import RequestContext, loader
 
 from .models import Universe, Year
 from .forms import CreateUniverseForm
-from people.views import seed_universe_players, draft_players
+from people.views import seed_universe_players, draft_players, age_players, create_players
 from teams.utils import initialize_team_source_data, create_initial_universe_teams
-from leagues.views import create_initial_universe_league, create_schedule
+from leagues.views import (create_initial_universe_league, create_schedule, 
+                           copy_league_memberships, copy_rosters, champion_determined)
 from leagues.models import League
 
 def index(request):
@@ -35,7 +36,7 @@ def universe_create(request):
     year_create(universe, randint(1940,2010))
     
     start_time = time.time()
-    seed_universe_players(universe,400)
+    seed_universe_players(universe,300)
     elapsed_time = time.time() - start_time
     logger.info("Universe {0} players seeded in {1} seconds".format(name, elapsed_time))
     
@@ -64,15 +65,48 @@ def year_start(universe):
     leagues = League.objects.filter(universe=universe)
     for league in leagues:
         create_schedule(league)
+
+def create_year(universe, year):
+        year.current_year = False
+        year.save()
+        new_year = Year(universe=universe,
+                         year=year.year + 1)
+        new_year.save()
+        
+        return new_year
+
+def advance_year(request,universe_id):
+        universe = Universe.objects.get(id=universe_id)
+        year = Year.objects.get(universe=universe,current_year=True)
+        new_year = create_year(universe, year)
+        age_players(universe)
+        create_players(universe, 300)
+        copy_league_memberships(universe, year, new_year)
+        copy_rosters(universe, year, new_year)
+        draft_players(universe)
+
+        leagues = League.objects.filter(universe=universe)
+
+        for league in leagues:
+                create_schedule(league)
+                
+        return redirect('show_leagues', universe_id=universe_id)
         
 def show_leagues(request, universe_id):
         universe = Universe.objects.get(id=universe_id)
         leagues = League.objects.filter(universe=universe)
         
+        season_complete = True
+        for league in leagues:
+            if not champion_determined(league):
+                season_complete = False
+                break
+        
         template = loader.get_template('league_list.html')
         context = RequestContext(request, {
-                'universe' : universe.name,
+                'universe' : universe,
                 'league_list' : leagues,
+                'season_complete' : season_complete
         })
         
         return HttpResponse(template.render(context))

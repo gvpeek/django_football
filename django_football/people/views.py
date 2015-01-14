@@ -7,6 +7,7 @@ from copy import deepcopy
 
 from django.shortcuts import render
 from django.core.exceptions import ObjectDoesNotExist
+from django.db import transaction
 
 from .models import Player
 from core.models import Year
@@ -40,13 +41,16 @@ def _check_rating_range_stub(rating, rating_range, status):
         rating = max(rating_range)
     return rating, status
 
+def get_min_max_ratings():
+    return [(14,(20,50)), # (age, (min,max))
+            (18,(30,60)),
+            (22,(45,75)),
+            (99,(60,90))]
+
 def age_player_stub(player_data, years=1):
     ''' function to break apart player stub and age them a single year
     '''
-    min_max_ratings = [(14,(20,50)), # (age, (min,max))
-                       (18,(30,60)),
-                       (22,(45,75)),
-                       (99,(60,90))]
+    min_max_ratings = get_min_max_ratings()
     age, rating, apex, inc, dec, status, position = (int(player_data[:2]), 
                                                      int(player_data[2:4]), 
                                                      int(player_data[4:6]),
@@ -107,6 +111,20 @@ def seed_universe_players(universe, players_per_year):
     
     logger.info('{0} players created in universe {1}.'.format(len(players), universe.name))
 
+def create_players(universe, number):
+        players = [Player(universe=universe,
+                          first_name=names.first_name(),
+                          last_name=names.last_name(),
+                          age = 11,
+                          position = choice(['QB','RB','WR','OT','OG','C','DT','DE','LB','CB','S','K','P']),
+                          constitution = randint(25,40),
+                          retired = False,
+                          apex_age = (floor(((32 * 100) * pow(randint(5,100),-.5)) / 100) + 18),
+                          growth_rate = randint(1,4),
+                          declination_rate = randint(3,5),
+                          ratings = randint(25,40)) for x in xrange(int(number))]
+
+        Player.objects.bulk_create(players)
 
 def determine_draft_needs(preference, roster):
         filled=[]
@@ -135,7 +153,7 @@ def draft_players(universe):
         team_order=TeamStats.objects.filter(universe=universe,
                                           year=previous_year).order_by('pct')
         for team_stat in team_order:
-            teams.append(list(Team.objects.get(id=team_stat.team.id))[0])
+            teams.append(Team.objects.get(id=team_stat.team.id))
     except ObjectDoesNotExist, e:
         print 'No previous team stats - ', e
 
@@ -191,3 +209,27 @@ def draft_players(universe):
             roster.save()
             player.signed=True
             player.save()
+
+def _check_rating_range(player,range):
+    if player.ratings < min(range):
+        player.retired = True
+        player.signed = False
+    elif player.ratings > max(range):
+        player.ratings = max(range)
+
+@transaction.commit_manually
+def age_players(universe):
+    min_max_ratings = get_min_max_ratings()
+                                                
+    for player in Player.objects.filter(retired=False,universe=universe):
+            player.age += 1
+            if player.age <= player.apex_age:
+                    player.ratings += randint(1,player.growth_rate)
+            else:
+                    player.ratings -= randint(3,player.declination_rate)
+            for age,ratings in min_max_ratings:
+                    if player.age <= age:
+                            _check_rating_range(player, ratings)
+                            break
+            player.save()
+    transaction.commit()

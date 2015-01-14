@@ -18,7 +18,7 @@ from .models import League, LeagueMembership, Game, Schedule, PlayoffTeams, Cham
 from core.models import Universe, Year
 from teams.models import Team, Roster, Playbook
 from stats.models import TeamStats, GameStats
-from stats.utils import update_stats
+from stats.utils import update_stats, get_team_stats
 # from people.views import practice_plays, call_play, choose_rush_pass_play
 
 
@@ -73,7 +73,7 @@ def create_initial_universe_league(universe_id,
                     div_nbr+=1
             conf_nbr+=1
 
-    league.number_playoff_teams = randint((div_nbr+1),(len(available_teams)/2))
+    league.number_playoff_teams = randint((div_nbr),(len(available_teams)/2))
     league.save()
 
 def determine_nbr_div(nbr_teams):
@@ -188,6 +188,35 @@ def create_schedule(league):
                          game_number=week.index(game) + 1)
             db_schedule.save()
 
+def copy_league_memberships(universe, source_year, new_year):
+    current_membership = LeagueMembership.objects.filter(universe=universe, year=source_year)
+    for membership in current_membership:
+        new_membership = LeagueMembership(universe=membership.universe,
+                                          year=new_year,
+                                          league=membership.league,
+                                          team=membership.team,
+                                          conference=membership.conference,
+                                          division=membership.division)
+        new_membership.save()
+
+def copy_rosters(universe, source_year, new_year):
+    current_rosters = Roster.objects.filter(universe=universe, year=source_year)
+    for roster in current_rosters:
+        roster.id = None
+        roster.pk = None
+        roster.year = new_year
+
+        for position in roster.get_positions():
+            player = getattr(roster,position)
+            if player.retired:
+                setattr(roster,position,None)
+                setattr(roster,position+'_age',None)
+                setattr(roster,position+'_rating',None)
+            else:
+                setattr(roster,position+'_age',player.age)
+                setattr(roster,position+'_rating',player.ratings)
+        roster.save()
+
 def play_game(id, playoff=False):
     db_game = Game.objects.get(id=id)
     home_team = prepare_team_for_game(db_game.home_team, db_game.away_team, db_game)
@@ -258,7 +287,7 @@ def play_game_batch(schedule_list):
         entry.played=True
         entry.save()
         if entry.playoff_game:
-            eliminate_playoff_team()
+            eliminate_playoff_team(entry.league, loser)
         
     if entry:
         league=entry.league
@@ -308,14 +337,19 @@ def current_playoff_field_size(league):
         return 0
 
 def champion_determined(league):
-    return Champions(universe=league.universe,
+    year = Year.objects.get(universe=league.universe,
+                            current_year=True)
+    return Champions.objects.filter(universe=league.universe,
                               year=year,
                               league=league).count()
 
 def manage_playoffs(league):
+    year = Year.objects.get(universe=league.universe,
+                            current_year=True)
     teams_remaining = current_playoff_field_size(league)
     if not teams_remaining:
         determine_playoff_field(league)
+        teams_remaining = current_playoff_field_size(league)
     if teams_remaining == 1:
         if not champion_determined(league):
             remaining_team = PlayoffTeams.objects.get(universe = league.universe,
@@ -425,6 +459,8 @@ def generate_playoff_schedule(league):
              
 def show_league_detail(request, league_id):
         league = League.objects.get(id=league_id)
+        year = Year.objects.get(universe=league.universe,
+                                current_year=True)
         membership_history = LeagueMembership.objects.filter(league=league)
         years = []
         for item in membership_history:
@@ -434,7 +470,7 @@ def show_league_detail(request, league_id):
         context = RequestContext(request, {
                 'league' : league,
                 'years' : years,
-                'league_teams' : [entry.team for entry in membership_history],
+                'league_teams' : [entry.team for entry in membership_history if entry.year == year],
         })
         
         return HttpResponse(template.render(context))
@@ -452,7 +488,7 @@ def get_sorted_standings(league, year):
                     standings[item.conference][item.division]
             except:
                     standings[item.conference].append([])
-            stats = TeamStats.objects.get(universe=item.universe, year=item.year, team=item.team)
+            stats = get_team_stats(universe=item.universe, year=item.year, team=item.team)
             standings[item.conference][item.division].append(stats)
 
     for conference in standings:  
@@ -511,6 +547,7 @@ def show_standings(request, league_id, year=None):
                                                                 {'team' : entry.game.home_team,
                                                                  'period_score' : '',
                                                                  'final' : ''}]})
+            
     except Exception, e:
         print 'Error generating standings:' , e
 

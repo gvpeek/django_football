@@ -15,6 +15,7 @@ urlpatterns = patterns('',
     url(r'^$', core.views.index, name='index'),
     url(r'universe/create/$', core.views.universe_create, name='universe_create'),
     url(r'universe/detail/(?P<universe_id>\d+)/$', core.views.show_leagues, name='show_leagues'),
+    url(r'universe/advance_year/(?P<universe_id>\d+)/$', core.views.advance_year, name='advance_league_year'),
     
     url(r'league/(?P<league_id>\d+)/$', leagues.views.show_league_detail, name='show_league_detail'),
     url(r'league/standings/(?P<league_id>\d+)/$', leagues.views.show_standings, name='show_league_standings'),

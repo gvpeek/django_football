@@ -48,7 +48,8 @@ def show_team_detail(request, team_id, year):
         weeks = set()
         for entry in league_schedule:
             outcome = None
-            weeks.add(entry.week)
+            if not entry.playoff_game:
+                weeks.add(entry.week)
             if team == entry.game.home_team:
                 outcome = get_game_outcome(entry.game, entry.game.home_team, entry.game.away_team)
                 team_schedule[entry.week] = {'opponent' : str(entry.game.away_team.city) + ' ' + entry.game.away_team.nickname}

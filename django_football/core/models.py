@@ -5,7 +5,9 @@ class Universe(models.Model):
         return self.name
         
     name = models.CharField(max_length=60)
-    
+    new_players_per_year = models.IntegerField(default=500)
+    new_player_delta_per_year = models.IntegerField(default=0)
+
     class Meta:
         app_label = 'core'
 

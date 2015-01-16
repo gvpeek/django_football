@@ -167,7 +167,7 @@ def draft_players(universe):
             r = Roster.objects.get(universe=universe,
                                    year=current_year,
                                    team=team)
-        except:
+        except ObjectDoesNotExist, e:
             r = Roster(universe=universe,
                        year=current_year,
                        team=team)

@@ -16,10 +16,12 @@ from leagues.views import (create_initial_universe_league, create_schedule,
 from leagues.models import League
 
 def index(request):
+    form = CreateUniverseForm()
     universe_list = Universe.objects.all()
     template = loader.get_template('index.html')
     context = RequestContext(request, {
-            'universe_list' : universe_list,
+        'form' : form,
+        'universe_list' : universe_list,
     })
     return HttpResponse(template.render(context))
 
@@ -28,30 +30,29 @@ def universe_create(request):
     
     league_names  = ['AFL', 'NFL', 'CFL', 'NAFL', 'UFL', 'USFL', 'NFA', 'WFL', 'IFL']
     form = CreateUniverseForm(request.POST)
-    if form.is_valid():
-        name = form.cleaned_data['name']
-    universe = Universe(name=name)
-    universe.save()
-    logger.info("Universe {0} created".format(name))
+    universe = form.save()
+    logger.info("Universe {0} created".format(universe.name))
     year_create(universe, randint(1940,2010))
     
     start_time = time.time()
-    seed_universe_players(universe,300)
+    seed_universe_players(universe,universe.new_players_per_year)
     elapsed_time = time.time() - start_time
-    logger.info("Universe {0} players seeded in {1} seconds".format(name, elapsed_time))
+    logger.info("Universe {0} players seeded in {1} seconds".format(universe.name, elapsed_time))
     
     initialize_team_source_data()
 
     create_initial_universe_teams(universe, 'pro')
     create_initial_universe_league(universe.id, choice(league_names), 'pro')
     year_start(universe)
+
+    return redirect('index')
     
-    universe_list = Universe.objects.all()
-    template = loader.get_template('index.html')
-    context = RequestContext(request, {
-            'universe_list' : universe_list,
-    })
-    return HttpResponse(template.render(context))
+    # universe_list = Universe.objects.all()
+    # template = loader.get_template('index.html')
+    # context = RequestContext(request, {
+    #         'universe_list' : universe_list,
+    # })
+    # return HttpResponse(template.render(context))
         
 def year_create(universe, year=None):
     year = Year(universe=universe,
@@ -77,10 +78,16 @@ def create_year(universe, year):
 
 def advance_year(request,universe_id):
         universe = Universe.objects.get(id=universe_id)
+        ## putting this in an if condition so we don't execute a save if we don't need to
+        if universe.new_players_delta_per_year:
+            universe.new_players_per_year += universe.new_players_delta_per_year
+            universe.save()
+            
         year = Year.objects.get(universe=universe,current_year=True)
         new_year = create_year(universe, year)
+
         age_players(universe)
-        create_players(universe, 300)
+        create_players(universe, universe.new_players_per_year)
         copy_league_memberships(universe, year, new_year)
         copy_rosters(universe, year, new_year)
         draft_players(universe)

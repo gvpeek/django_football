@@ -18,6 +18,7 @@ import python_football
 from .models import League, LeagueMembership, Game, Schedule, PlayoffTeams, Champions
 from core.models import Universe, Year
 from teams.models import Team, Roster, Playbook
+from teams.utils import determine_number_pro_teams
 from stats.models import TeamStats, GameStats
 from stats.utils import update_stats, get_team_stats
 # from people.views import practice_plays, call_play, choose_rush_pass_play
@@ -190,6 +191,8 @@ def create_schedule(league):
             db_schedule.save()
 
 def copy_league_memberships(universe, source_year, new_year):
+    logger = logging.getLogger('django.request')
+    
     current_membership = LeagueMembership.objects.filter(universe=universe, year=source_year)
     for membership in current_membership:
         new_membership = LeagueMembership(universe=membership.universe,
@@ -199,6 +202,9 @@ def copy_league_memberships(universe, source_year, new_year):
                                           conference=membership.conference,
                                           division=membership.division)
         new_membership.save()
+
+    logger.info('{0} current teams, {1} potential teams.'.format(len(current_membership), 
+                                                                 determine_number_pro_teams(universe)))
 
 def copy_rosters(universe, source_year, new_year):
     logger = logging.getLogger('django.request')

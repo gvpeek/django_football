@@ -4,6 +4,7 @@ import logging
 from math import floor, ceil, pow
 from random import randint, choice, shuffle
 from copy import deepcopy
+from collections import OrderedDict, deque
 
 from django.shortcuts import render
 from django.core.exceptions import ObjectDoesNotExist
@@ -157,78 +158,81 @@ def draft_players(universe):
     teams=[]
     try:
         team_order=TeamStats.objects.filter(universe=universe,
-                                          year=previous_year).order_by('pct')
+                                          year=previous_year).order_by('pct', 'diff', 'score')
         for team_stat in team_order:
-            teams.append(Team.objects.get(id=team_stat.team.id))
+            teams.append(team_stat.team)
     except ObjectDoesNotExist, e:
         logger.info('No previous team stats - {0}'.format(e))
 
     if not teams:
         teams = Team.objects.filter(universe=universe)
         shuffle(list(teams))
-    draft_preference = {}
+        
+    draft_preference = OrderedDict()
     nbr_positions = 0 
     for team in teams:
         try:
-            r = Roster.objects.get(universe=universe,
+            roster = Roster.objects.get(universe=universe,
                                    year=current_year,
                                    team=team)
         except ObjectDoesNotExist, e:
-            r = Roster(universe=universe,
+            roster = Roster(universe=universe,
                        year=current_year,
                        team=team)
-            r.save()
+            roster.save()
             
-        draft_preference[team] = deepcopy(json.loads(team.draft_position_order))
-        draft_preference[team] = determine_draft_needs(draft_preference[team], r)
+        draft_preference[team] = deque()
+        draft_preference[team].extend(determine_draft_needs(deepcopy(json.loads(team.draft_position_order)), roster))
         if nbr_positions < len(draft_preference[team]):
                 nbr_positions=len(draft_preference[team])
                 
-    draft_order=[]
-    for i in xrange(nbr_positions):
-        for team in teams:
-            try:
-                draft_order.append((team, draft_preference[team][i]))
-            except:
-                pass
-                        
-    logger.info('Draft order ' + str(draft_order))
-    for pick_team, pick_position in draft_order:
-        players = Player.objects.filter(universe=universe,
-                                        position=pick_position,
-                                        retired=False,
-                                        signed=False,
-                                        age__gte=23).order_by('ratings').reverse()
-        roster = Roster.objects.get(universe=universe,
-                                    year=current_year,
-                                    team=pick_team)
-        player = players[0]
-        current_player = getattr(roster, pick_position.lower())
-        if not current_player or \
-                (player.ratings >  current_player.ratings): # and player.age < current_player.age 
-            # current_player = Player.objects.get(id=roster.pick_position.lower().id)
-            if current_player:
-                current_player.signed=False
-                current_player.save()
-                logger.info('{0} {1} {2} {3} {4} was cut.'.format(pick_team.city,
-                                                                  pick_team.nickname,
-                                                                  pick_position,
-                                                                  current_player.first_name,
-                                                                  current_player.last_name))
-            setattr(roster,pick_position.lower(),player)
-            setattr(roster,pick_position.lower()+'_age',player.age)
-            setattr(roster,pick_position.lower()+'_rating',player.ratings)
-            roster.save()
-            player.signed=True
-            player.save()
+    logger.info('Draft order ' + str(draft_preference))
+    
+    ## need to set team here for first check of presence of key
+    team = draft_preference.keys()[0]
+    while draft_preference:
+        if not draft_preference[team]:
+            del draft_preference[team]
+        for team in draft_preference:
+            selected = False
+            while not selected and draft_preference[team]:
+                pick_position = draft_preference[team].popleft()
+                players = Player.objects.filter(universe=universe,
+                                                position=pick_position,
+                                                retired=False,
+                                                signed=False,
+                                                age__gte=23).order_by('ratings').reverse()
+                roster = Roster.objects.get(universe=universe,
+                                            year=current_year,
+                                            team=team)
+                player = players[0]
+                current_player = getattr(roster, pick_position.lower())
+                if not current_player or \
+                        (player.ratings >  current_player.ratings): # and player.age < current_player.age 
+                    # current_player = Player.objects.get(id=roster.pick_position.lower().id)
+                    if current_player:
+                        current_player.signed=False
+                        current_player.save()
+                        logger.info('{0} {1} {2} {3} {4} was cut.'.format(team.city,
+                                                                          team.nickname,
+                                                                          pick_position,
+                                                                          current_player.first_name,
+                                                                          current_player.last_name))
+                    setattr(roster,pick_position.lower(),player)
+                    setattr(roster,pick_position.lower()+'_age',player.age)
+                    setattr(roster,pick_position.lower()+'_rating',player.ratings)
+                    roster.save()
+                    player.signed=True
+                    player.save()
+                    selected = True
             
-            method = 'drafted' if player.age == 23 else 'signed'
-            logger.info('{0} {1} {2} {3} {4} was {5}.'.format(pick_team.city,
-                                                              pick_team.nickname,
-                                                              pick_position,
-                                                              player.first_name,
-                                                              player.last_name,
-                                                              method))
+                    method = 'drafted' if player.age == 23 else 'signed'
+                    logger.info('{0} {1} {2} {3} {4} was {5}.'.format(team.city,
+                                                                      team.nickname,
+                                                                      pick_position,
+                                                                      player.first_name,
+                                                                      player.last_name,
+                                                                      method))
 
 def _check_rating_range(player,range):
     if player.ratings < min(range):

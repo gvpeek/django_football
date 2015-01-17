@@ -112,19 +112,23 @@ def seed_universe_players(universe, players_per_year):
     logger.info('{0} players created in universe {1}.'.format(len(players), universe.name))
 
 def create_players(universe, number):
-        players = [Player(universe=universe,
-                          first_name=names.first_name(),
-                          last_name=names.last_name(),
-                          age = 11,
-                          position = choice(['QB','RB','WR','OT','OG','C','DT','DE','LB','CB','S','K','P']),
-                          constitution = randint(25,40),
-                          retired = False,
-                          apex_age = (floor(((32 * 100) * pow(randint(5,100),-.5)) / 100) + 18),
-                          growth_rate = randint(1,4),
-                          declination_rate = randint(3,5),
-                          ratings = randint(25,40)) for x in xrange(int(number))]
+    logger = logging.getLogger('django.request')
 
-        Player.objects.bulk_create(players)
+    players = [Player(universe=universe,
+                      first_name=names.first_name(),
+                      last_name=names.last_name(),
+                      age = 11,
+                      position = choice(['QB','RB','WR','OT','OG','C','DT','DE','LB','CB','S','K','P']),
+                      constitution = randint(25,40),
+                      retired = False,
+                      apex_age = (floor(((32 * 100) * pow(randint(5,100),-.5)) / 100) + 18),
+                      growth_rate = randint(1,4),
+                      declination_rate = randint(3,5),
+                      ratings = randint(25,40)) for x in xrange(int(number))]
+
+    Player.objects.bulk_create(players)
+    
+    logger.info('{0} players created in universe {1}.'.format(len(players), universe.name))
 
 def determine_draft_needs(preference, roster):
         filled=[]
@@ -139,6 +143,8 @@ def determine_draft_needs(preference, roster):
         return preference
     
 def draft_players(universe):
+    logger = logging.getLogger('django.request')
+    
     current_year = Year.objects.get(universe=universe,
                                     current_year=True)
     previous_year=None
@@ -146,7 +152,7 @@ def draft_players(universe):
         previous_year = Year.objects.get(universe=universe,
                                          year=(current_year.year - 1))
     except ObjectDoesNotExist, e:
-        print 'No previous year - ', e
+        logger.info('No previous year - {0}'.format(e))
 
     teams=[]
     try:
@@ -155,7 +161,7 @@ def draft_players(universe):
         for team_stat in team_order:
             teams.append(Team.objects.get(id=team_stat.team.id))
     except ObjectDoesNotExist, e:
-        print 'No previous team stats - ', e
+        logger.info('No previous team stats - {0}'.format(e))
 
     if not teams:
         teams = Team.objects.filter(universe=universe)
@@ -186,6 +192,7 @@ def draft_players(universe):
             except:
                 pass
                         
+    logger.info('Draft order ' + str(draft_order))
     for pick_team, pick_position in draft_order:
         players = Player.objects.filter(universe=universe,
                                         position=pick_position,
@@ -203,12 +210,25 @@ def draft_players(universe):
             if current_player:
                 current_player.signed=False
                 current_player.save()
+                logger.info('{0} {1} {2} {3} {4} was cut.'.format(pick_team.city,
+                                                                  pick_team.nickname,
+                                                                  pick_position,
+                                                                  current_player.first_name,
+                                                                  current_player.last_name))
             setattr(roster,pick_position.lower(),player)
             setattr(roster,pick_position.lower()+'_age',player.age)
             setattr(roster,pick_position.lower()+'_rating',player.ratings)
             roster.save()
             player.signed=True
             player.save()
+            
+            method = 'drafted' if player.age == 23 else 'signed'
+            logger.info('{0} {1} {2} {3} {4} was {5}.'.format(pick_team.city,
+                                                              pick_team.nickname,
+                                                              pick_position,
+                                                              player.first_name,
+                                                              player.last_name,
+                                                              method))
 
 def _check_rating_range(player,range):
     if player.ratings < min(range):
@@ -219,17 +239,26 @@ def _check_rating_range(player,range):
 
 @transaction.commit_manually
 def age_players(universe):
+    logger = logging.getLogger('django.request')
+    
     min_max_ratings = get_min_max_ratings()
-                                                
-    for player in Player.objects.filter(retired=False,universe=universe):
-            player.age += 1
-            if player.age <= player.apex_age:
-                    player.ratings += randint(1,player.growth_rate)
-            else:
-                    player.ratings -= randint(3,player.declination_rate)
-            for age,ratings in min_max_ratings:
-                    if player.age <= age:
-                            _check_rating_range(player, ratings)
-                            break
-            player.save()
+    active_players = Player.objects.filter(retired=False,universe=universe)
+
+    players_retired = 0
+    for player in active_players:
+        player.age += 1
+        if player.age <= player.apex_age:
+            player.ratings += randint(1,player.growth_rate)
+        else:
+            player.ratings -= randint(3,player.declination_rate)
+        for age,ratings in min_max_ratings:
+            if player.age <= age:
+                _check_rating_range(player, ratings)
+                break
+        if player.retired:
+            players_retired += 1
+        player.save()
+        
     transaction.commit()
+    
+    logger.info('{0} players processed. {1} players retired'.format(len(active_players), players_retired))

@@ -79,8 +79,8 @@ def create_year(universe, year):
 def advance_year(request,universe_id):
         universe = Universe.objects.get(id=universe_id)
         ## putting this in an if condition so we don't execute a save if we don't need to
-        if universe.new_players_delta_per_year:
-            universe.new_players_per_year += universe.new_players_delta_per_year
+        if universe.new_player_delta_per_year:
+            universe.new_players_per_year += universe.new_player_delta_per_year
             universe.save()
             
         year = Year.objects.get(universe=universe,current_year=True)

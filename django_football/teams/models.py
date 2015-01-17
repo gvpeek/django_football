@@ -34,8 +34,11 @@ class Playbook(models.Model):
     plays = models.CharField(max_length=10000)
 
 def get_draft_position_order():
-    order =['QB','RB','WR','OT','OG','C','DT','DE','LB','CB','S','K','P']
+    order = ['QB','RB','WR','OT','OG','C','DT','DE','LB','CB','S']
+    special = ['K','P']
     shuffle(order)
+    shuffle(special)
+    order.extend(special)
     return json.dumps(order)
 
 class Team(models.Model):

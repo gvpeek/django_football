@@ -1,6 +1,7 @@
 import json
 import pickle
 import operator
+import logging
 
 from collections import deque, OrderedDict
 from random import choice, randint, shuffle
@@ -200,6 +201,8 @@ def copy_league_memberships(universe, source_year, new_year):
         new_membership.save()
 
 def copy_rosters(universe, source_year, new_year):
+    logger = logging.getLogger('django.request')
+    
     current_rosters = Roster.objects.filter(universe=universe, year=source_year)
     for roster in current_rosters:
         roster.id = None
@@ -212,6 +215,11 @@ def copy_rosters(universe, source_year, new_year):
                 setattr(roster,position,None)
                 setattr(roster,position+'_age',None)
                 setattr(roster,position+'_rating',None)
+                logger.info('{0} {1} {2} {3} {4} has retired.'.format(roster.team.city,
+                                                                      roster.team.nickname,
+                                                                      position,
+                                                                      player.first_name,
+                                                                      player.last_name))
             else:
                 setattr(roster,position+'_age',player.age)
                 setattr(roster,position+'_rating',player.ratings)
@@ -289,11 +297,13 @@ def play_game_batch(schedule_list):
         if entry.playoff_game:
             eliminate_playoff_team(entry.league, loser)
         
-    if entry:
-        league=entry.league
-        
-    if not scheduled_games_remaining(league):
-        manage_playoffs(league)
+    try:
+        if entry:
+            league=entry.league        
+        if not scheduled_games_remaining(league):
+            manage_playoffs(league)
+    except UnboundLocalError, e:
+        pass
         
 def play_league_game(request, game_id):
     game = Game.objects.get(id=game_id)
@@ -344,6 +354,8 @@ def champion_determined(league):
                               league=league).count()
 
 def manage_playoffs(league):
+    logger = logging.getLogger('django.request')
+    
     year = Year.objects.get(universe=league.universe,
                             current_year=True)
     teams_remaining = current_playoff_field_size(league)
@@ -361,6 +373,10 @@ def manage_playoffs(league):
                               league=league,
                               team=remaining_team.team)
             champ.save()
+            logger.info('The {0} {1} win {2} {3} Championship.'.format(champ.team.city, 
+                                                                       champ.team.nickname,
+                                                                       year.year,
+                                                                       league.name))
             return False
         else:
             return False
@@ -378,14 +394,11 @@ def determine_playoff_field(league):
 
     for conference in sorted_standings:
         for div in conference:
-            print 'div sort', div
             division_winners.append(div[0])
             wild_card.extend(div[1:])
         
     division_winners = sorted(division_winners, key=operator.attrgetter('pct', 'diff', 'score'), reverse=True)
     wild_card = sorted(wild_card, key=operator.attrgetter('pct', 'diff', 'score'), reverse=True)
-    print 'div' , division_winners
-    print 'wild', wild_card
     seed = 1
     for team in division_winners:
         pt = PlayoffTeams(universe = league.universe,

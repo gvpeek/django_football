@@ -2,6 +2,7 @@ import json
 import pickle
 import operator
 import logging
+import time
 
 from collections import deque, OrderedDict
 from random import choice, randint, shuffle
@@ -519,6 +520,9 @@ def get_sorted_standings(league, year):
     return sorted_standings
 
 def show_standings(request, league_id, year=None):
+    logger = logging.getLogger('django.request')
+    
+    start_time = time.time()
     league = League.objects.get(id=league_id)
     if year:
         year_obj = Year.objects.get(universe=league.universe, year=year)
@@ -526,6 +530,12 @@ def show_standings(request, league_id, year=None):
         year_obj = Year.objects.get(universe=league.universe, current_year=True)
     sorted_standings = get_sorted_standings(league, year_obj)
     
+    elapsed_time = time.time() - start_time
+    logger.info("League {0} standings retrieved in {1} seconds".format(league.name, elapsed_time))
+    
+
+    ## get schedule and results
+    start_time = time.time()
     schedule_id = None
     next_game_id = None
     schedule_results=OrderedDict()
@@ -556,7 +566,7 @@ def show_standings(request, league_id, year=None):
                 home['final'] = home_stats.score
                 schedule_results[entry.week].append({'id' : entry.game.id, 
                                                      'played' : entry.played, 
-                                                     'teams' : [away,home]})
+                                                     'teams' : [away,home]})            
             except ObjectDoesNotExist, e:
                 schedule_results[entry.week].append({'id' : entry.game.id, 
                                                      'played' : entry.played, 
@@ -566,6 +576,8 @@ def show_standings(request, league_id, year=None):
                                                                 {'team' : entry.game.home_team,
                                                                  'period_score' : '',
                                                                  'final' : ''}]})
+        elapsed_time = time.time() - start_time
+        logger.info("League {0} schedule retrieved in {1} seconds".format(league.name, elapsed_time))
             
     except Exception, e:
         print 'Error generating standings:' , e

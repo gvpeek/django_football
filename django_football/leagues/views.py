@@ -496,7 +496,8 @@ def show_league_detail(request, league_id):
         return HttpResponse(template.render(context))
 
 def get_sorted_standings(league, year):
-    members = LeagueMembership.objects.filter(universe=league.universe, year=year, league=league).order_by('conference', 'division')
+    universe = league.universe
+    members = LeagueMembership.objects.filter(universe=universe, year=year, league=league).order_by('conference', 'division')
     standings = []
     sorted_standings = []
     for item in members:
@@ -508,7 +509,7 @@ def get_sorted_standings(league, year):
                     standings[item.conference][item.division]
             except:
                     standings[item.conference].append([])
-            stats = get_team_stats(universe=item.universe, year=item.year, team=item.team)
+            stats = get_team_stats(universe=universe, year=year, team=item.team)
             standings[item.conference][item.division].append(stats)
 
     for conference in standings:  
@@ -524,10 +525,11 @@ def show_standings(request, league_id, year=None):
     
     start_time = time.time()
     league = League.objects.get(id=league_id)
+    universe = league.universe
     if year:
-        year_obj = Year.objects.get(universe=league.universe, year=year)
+        year_obj = Year.objects.get(universe=universe, year=year)
     else:
-        year_obj = Year.objects.get(universe=league.universe, current_year=True)
+        year_obj = Year.objects.get(universe=universe, current_year=True)
     sorted_standings = get_sorted_standings(league, year_obj)
     
     elapsed_time = time.time() - start_time
@@ -540,20 +542,21 @@ def show_standings(request, league_id, year=None):
     next_game_id = None
     schedule_results=OrderedDict()
     try:
-        sched = Schedule.objects.filter(universe=league.universe, year=year_obj).order_by('week', 'game')
-        schedule_id = sched[0].id
+        sched = Schedule.objects.filter(universe=universe, year=year_obj).order_by('week', 'game')
         for entry in sched:
+            if not schedule_id:
+                schedule_id = entry.id
             if entry.week not in schedule_results:
                 schedule_results[entry.week] = []
             if not entry.played and not next_game_id:
                 next_game_id = entry.game.id
             try:
-                home_stats = GameStats.objects.get(universe=entry.game.universe,
-                                                   year=entry.game.year,
+                home_stats = GameStats.objects.get(universe=universe,
+                                                   year=year_obj,
                                                    game=entry.game,
                                                    team=entry.game.home_team)
-                away_stats = GameStats.objects.get(universe=entry.game.universe,
-                                                   year=entry.game.year,
+                away_stats = GameStats.objects.get(universe=universe,
+                                                   year=year_obj,
                                                    game=entry.game,
                                                    team=entry.game.away_team)
                 away={}

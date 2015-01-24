@@ -24,6 +24,7 @@ from stats.models import TeamStats, GameStats
 from stats.utils import update_stats, get_team_stats
 # from people.views import practice_plays, call_play, choose_rush_pass_play
 
+cached_team_names = {}
 
 def create_initial_universe_league(universe_id,
                   name,
@@ -520,6 +521,18 @@ def get_sorted_standings(league, year):
 
     return sorted_standings
 
+def get_team_name(team_id):
+    logger = logging.getLogger('django.request')
+    
+    if not team_id in cached_team_names:
+        try:
+            team = Team.objects.get(id=team_id)
+            cached_team_names[team_id] = team.city.name + ' ' + team.nickname
+        except ObjectDoesNotExist, e:
+            logger.error("Team ID {0} does not exist.".format(team_id))
+
+    return cached_team_names.get(team_id)
+
 def show_standings(request, league_id, year=None):
     logger = logging.getLogger('django.request')
     
@@ -560,23 +573,23 @@ def show_standings(request, league_id, year=None):
                                                    game=entry.game,
                                                    team=entry.game.away_team)
                 away={}
-                away['team'] = away_stats.team
+                away['team'] = get_team_name(away_stats.team_id)
                 away['period_scores'] = literal_eval(away_stats.score_by_period)
                 away['final'] = away_stats.score
                 home={}
-                home['team'] = home_stats.team
+                home['team'] = get_team_name(home_stats.team_id)
                 home['period_scores'] = literal_eval(home_stats.score_by_period)
                 home['final'] = home_stats.score
-                schedule_results[entry.week].append({'id' : entry.game.id, 
+                schedule_results[entry.week].append({'id' : entry.game_id, 
                                                      'played' : entry.played, 
-                                                     'teams' : [away,home]})            
+                                                     'teams' : [away,home]})
             except ObjectDoesNotExist, e:
-                schedule_results[entry.week].append({'id' : entry.game.id, 
+                schedule_results[entry.week].append({'id' : entry.game_id, 
                                                      'played' : entry.played, 
-                                                     'teams' : [{'team' : entry.game.away_team,
+                                                     'teams' : [{'team' : get_team_name(entry.game.away_team_id),
                                                                  'period_score' : '',
                                                                  'final' : ''}, 
-                                                                {'team' : entry.game.home_team,
+                                                                {'team' : get_team_name(entry.game.home_team_id),
                                                                  'period_score' : '',
                                                                  'final' : ''}]})
         elapsed_time = time.time() - start_time

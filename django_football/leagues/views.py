@@ -496,31 +496,6 @@ def show_league_detail(request, league_id):
         
         return HttpResponse(template.render(context))
 
-def get_sorted_standings(league, year):
-    universe = league.universe
-    members = LeagueMembership.objects.filter(universe=universe, year=year, league=league).order_by('conference', 'division')
-    standings = []
-    sorted_standings = []
-    for item in members:
-            try:
-                    standings[item.conference]
-            except:
-                    standings.append([])
-            try:
-                    standings[item.conference][item.division]
-            except:
-                    standings[item.conference].append([])
-            stats = get_team_stats(universe=universe, year=year, team=item.team)
-            standings[item.conference][item.division].append(stats)
-
-    for conference in standings:  
-            sorted_standings.append([])
-            ix = len(sorted_standings) - 1
-            for division in conference:
-                    sorted_standings[ix].append(sorted(division, key=operator.attrgetter('pct', 'diff', 'score'), reverse=True))
-
-    return sorted_standings
-
 def get_team_name(team_id):
     logger = logging.getLogger('django.request')
     
@@ -533,16 +508,39 @@ def get_team_name(team_id):
 
     return cached_team_names.get(team_id)
 
+def get_sorted_standings(league, year):
+    members = LeagueMembership.objects.filter(universe=league.universe_id, year=year, league=league).order_by('conference', 'division')
+    standings = []
+    sorted_standings = []
+    for item in members:
+            try:
+                    standings[item.conference]
+            except:
+                    standings.append([])
+            try:
+                    standings[item.conference][item.division]
+            except:
+                    standings[item.conference].append([])
+            stats = get_team_stats(universe=league.universe_id, year=year, team=item.team_id)
+            standings[item.conference][item.division].append(stats)
+
+    for conference in standings:  
+            sorted_standings.append([])
+            ix = len(sorted_standings) - 1
+            for division in conference:
+                    sorted_standings[ix].append(sorted(division, key=operator.attrgetter('pct', 'diff', 'score'), reverse=True))
+
+    return sorted_standings
+
 def show_standings(request, league_id, year=None):
     logger = logging.getLogger('django.request')
     
     start_time = time.time()
     league = League.objects.get(id=league_id)
-    universe = league.universe
     if year:
-        year_obj = Year.objects.get(universe=universe, year=year)
+        year_obj = Year.objects.get(universe=league.universe_id, year=year)
     else:
-        year_obj = Year.objects.get(universe=universe, current_year=True)
+        year_obj = Year.objects.get(universe=league.universe_id, current_year=True)
     sorted_standings = get_sorted_standings(league, year_obj)
     
     elapsed_time = time.time() - start_time
@@ -555,23 +553,24 @@ def show_standings(request, league_id, year=None):
     next_game_id = None
     schedule_results=OrderedDict()
     try:
-        sched = Schedule.objects.filter(universe=universe, year=year_obj).order_by('week', 'game')
+        sched = Schedule.objects.filter(universe=league.universe_id, year=year_obj).order_by('week', 'game')
         for entry in sched:
             if not schedule_id:
                 schedule_id = entry.id
             if entry.week not in schedule_results:
                 schedule_results[entry.week] = []
             if not entry.played and not next_game_id:
-                next_game_id = entry.game.id
+                next_game_id = entry.game_id
             try:
-                home_stats = GameStats.objects.get(universe=universe,
+                current_game = entry.game
+                home_stats = GameStats.objects.get(universe=league.universe_id,
                                                    year=year_obj,
-                                                   game=entry.game,
-                                                   team=entry.game.home_team)
-                away_stats = GameStats.objects.get(universe=universe,
+                                                   game=current_game,
+                                                   team=current_game.home_team)
+                away_stats = GameStats.objects.get(universe=league.universe_id,
                                                    year=year_obj,
-                                                   game=entry.game,
-                                                   team=entry.game.away_team)
+                                                   game=current_game,
+                                                   team=current_game.away_team)
                 away={}
                 away['team'] = get_team_name(away_stats.team_id)
                 away['period_scores'] = literal_eval(away_stats.score_by_period)
@@ -584,12 +583,13 @@ def show_standings(request, league_id, year=None):
                                                      'played' : entry.played, 
                                                      'teams' : [away,home]})
             except ObjectDoesNotExist, e:
+                current_game = entry.game
                 schedule_results[entry.week].append({'id' : entry.game_id, 
                                                      'played' : entry.played, 
-                                                     'teams' : [{'team' : get_team_name(entry.game.away_team_id),
+                                                     'teams' : [{'team' : get_team_name(current_game.away_team_id),
                                                                  'period_score' : '',
                                                                  'final' : ''}, 
-                                                                {'team' : get_team_name(entry.game.home_team_id),
+                                                                {'team' : get_team_name(current_game.home_team_id),
                                                                  'period_score' : '',
                                                                  'final' : ''}]})
         elapsed_time = time.time() - start_time

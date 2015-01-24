@@ -22,9 +22,9 @@ def get_game_stats(universe, year, game, team):
 def get_team_stats(universe, year, team, playoff=False):
     if not playoff:
         try:
-            ts = TeamStats.objects.get(universe=universe,
-                                       year=year,
-                                       team=team)
+            ts = TeamStats.objects.select_related('team').get(universe=universe,
+                                                              year=year,
+                                                              team=team)
         except ObjectDoesNotExist, e:
             ts = TeamStats(universe=universe,
                            year=year,

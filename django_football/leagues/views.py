@@ -508,6 +508,18 @@ def get_team_name(team_id):
 
     return cached_team_names.get(team_id)
 
+class StandingsStats():
+    def __init__(self, year, team_id, stats):
+        self.year = year
+        self.team_id = team_id,
+        self.team =  get_team_name(team_id)
+        self.pct  = stats.pct
+        self.diff =  stats.diff
+        self.score = stats.score
+        self.wins =  stats.wins
+        self.losses = stats.losses
+        self.ties = stats.ties
+
 def get_sorted_standings(league, year):
     members = LeagueMembership.objects.filter(universe=league.universe_id, year=year, league=league).order_by('conference', 'division')
     standings = []
@@ -522,7 +534,8 @@ def get_sorted_standings(league, year):
             except:
                     standings[item.conference].append([])
             stats = get_team_stats(universe=league.universe_id, year=year, team=item.team_id)
-            standings[item.conference][item.division].append(stats)
+            standings_stats = StandingsStats(year.year, item.team_id, stats)
+            standings[item.conference][item.division].append(standings_stats)
 
     for conference in standings:  
             sorted_standings.append([])

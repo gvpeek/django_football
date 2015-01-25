@@ -26,6 +26,20 @@ from stats.utils import update_stats, get_team_stats
 
 cached_team_names = {}
 
+# used to convert model object to plain object to reduce db calls by taking advantange
+# of cached values rather than foreign key lookups
+class StandingsStats():
+    def __init__(self, year, team_id, stats):
+        self.year = year
+        self.team_id = team_id,
+        self.team =  get_team_name(team_id)
+        self.pct  = stats.pct
+        self.diff =  stats.diff
+        self.score = stats.score
+        self.wins =  stats.wins
+        self.losses = stats.losses
+        self.ties = stats.ties
+
 def create_initial_universe_league(universe_id,
                   name,
                   level,
@@ -508,18 +522,6 @@ def get_team_name(team_id):
 
     return cached_team_names.get(team_id)
 
-class StandingsStats():
-    def __init__(self, year, team_id, stats):
-        self.year = year
-        self.team_id = team_id,
-        self.team =  get_team_name(team_id)
-        self.pct  = stats.pct
-        self.diff =  stats.diff
-        self.score = stats.score
-        self.wins =  stats.wins
-        self.losses = stats.losses
-        self.ties = stats.ties
-
 def get_sorted_standings(league, year):
     members = LeagueMembership.objects.filter(universe=league.universe_id, year=year, league=league).order_by('conference', 'division')
     standings = []
@@ -544,6 +546,16 @@ def get_sorted_standings(league, year):
                     sorted_standings[ix].append(sorted(division, key=operator.attrgetter('pct', 'diff', 'score'), reverse=True))
 
     return sorted_standings
+
+def get_base_game_stat_display(entry, current_game):
+    return {'id' : entry.game_id, 
+            'played' : entry.played, 
+            'teams' : [{'team' : get_team_name(current_game.away_team_id),
+                        'period_score' : '',
+                        'final' : ''}, 
+                       {'team' : get_team_name(current_game.home_team_id),
+                        'period_score' : '',
+                        'final' : ''}]}
 
 def show_standings(request, league_id, year=None):
     logger = logging.getLogger('django.request')
@@ -574,37 +586,32 @@ def show_standings(request, league_id, year=None):
                 schedule_results[entry.week] = []
             if not entry.played and not next_game_id:
                 next_game_id = entry.game_id
-            try:
-                current_game = entry.game
-                home_stats = GameStats.objects.get(universe=league.universe_id,
-                                                   year=year_obj,
-                                                   game=current_game,
-                                                   team=current_game.home_team)
-                away_stats = GameStats.objects.get(universe=league.universe_id,
-                                                   year=year_obj,
-                                                   game=current_game,
-                                                   team=current_game.away_team)
-                away={}
-                away['team'] = get_team_name(away_stats.team_id)
-                away['period_scores'] = literal_eval(away_stats.score_by_period)
-                away['final'] = away_stats.score
-                home={}
-                home['team'] = get_team_name(home_stats.team_id)
-                home['period_scores'] = literal_eval(home_stats.score_by_period)
-                home['final'] = home_stats.score
-                schedule_results[entry.week].append({'id' : entry.game_id, 
-                                                     'played' : entry.played, 
-                                                     'teams' : [away,home]})
-            except ObjectDoesNotExist, e:
-                current_game = entry.game
-                schedule_results[entry.week].append({'id' : entry.game_id, 
-                                                     'played' : entry.played, 
-                                                     'teams' : [{'team' : get_team_name(current_game.away_team_id),
-                                                                 'period_score' : '',
-                                                                 'final' : ''}, 
-                                                                {'team' : get_team_name(current_game.home_team_id),
-                                                                 'period_score' : '',
-                                                                 'final' : ''}]})
+            if entry.played:
+                try:
+                    current_game = entry.game
+                    home_stats = GameStats.objects.get(universe=league.universe_id,
+                                                       year=year_obj,
+                                                       game=current_game,
+                                                       team=current_game.home_team)
+                    away_stats = GameStats.objects.get(universe=league.universe_id,
+                                                       year=year_obj,
+                                                       game=current_game,
+                                                       team=current_game.away_team)
+                    away={}
+                    away['team'] = get_team_name(away_stats.team_id)
+                    away['period_scores'] = literal_eval(away_stats.score_by_period)
+                    away['final'] = away_stats.score
+                    home={}
+                    home['team'] = get_team_name(home_stats.team_id)
+                    home['period_scores'] = literal_eval(home_stats.score_by_period)
+                    home['final'] = home_stats.score
+                    schedule_results[entry.week].append({'id' : entry.game_id, 
+                                                         'played' : entry.played, 
+                                                         'teams' : [away,home]})
+                except ObjectDoesNotExist, e:
+                    schedule_results[entry.week].append(get_base_game_stat_display(entry, entry.game))
+            else:
+                schedule_results[entry.week].append(get_base_game_stat_display(entry, entry.game))
         elapsed_time = time.time() - start_time
         logger.info("League {0} schedule retrieved in {1} seconds".format(league.name, elapsed_time))
             

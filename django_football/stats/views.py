@@ -11,7 +11,7 @@ def game_stats(request, game_id):
     game = Game.objects.get(id=game_id)
     team_stats = GameStats.objects.filter(game=game)
     
-    if team_stats[0].team == game.home_team:
+    if team_stats[0].team_id == game.home_team_id:
         home_team_stats = team_stats[0]
         away_team_stats = team_stats[1]
     else:
@@ -34,7 +34,7 @@ def game_stats(request, game_id):
         
     template = loader.get_template('game_stats.html')
     context = RequestContext(request, {
-        'universe_id' : game.universe.id,
+        'universe_id' : game.universe_id,
         'year' : game.year.year,
         'home_team_stats' : home_team_stats,
         'home_score_by_period' : home_score_by_period,

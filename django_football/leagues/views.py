@@ -302,9 +302,9 @@ def scheduled_games_remaining(league):
                                     played=False).count()
 
 def eliminate_playoff_team(league, team):
-    year = Year.objects.get(universe=league.universe,
+    year = Year.objects.get(universe=league.universe_id,
                             current_year=True)
-    loser = PlayoffTeams.objects.get(universe=league.universe,
+    loser = PlayoffTeams.objects.get(universe=league.universe_id,
                                      year=year,
                                      league=league,
                                      team=team)
@@ -313,7 +313,7 @@ def eliminate_playoff_team(league, team):
 
 def play_game_batch(schedule_list):
     for entry in schedule_list:
-        loser = play_game(entry.game.id, entry.playoff_game)
+        loser = play_game(entry.game_id, entry.playoff_game)
         entry.played=True
         entry.save()
         if entry.playoff_game:
@@ -321,38 +321,35 @@ def play_game_batch(schedule_list):
         
     try:
         if entry:
-            league=entry.league        
+            league=entry.league     
         if not scheduled_games_remaining(league):
             manage_playoffs(league)
     except UnboundLocalError, e:
         pass
         
 def play_league_game(request, game_id):
-    game = Game.objects.get(id=game_id)
-    schedule_entry = Schedule.objects.get(game=game)
+    schedule_entry = Schedule.objects.get(game=game_id)
     
     play_game_batch([schedule_entry])
     
     return redirect('show_game_stats', game_id=game_id)
 
 def play_league_week(request, league_id, week):
-    league = League.objects.get(id=league_id)
-    schedule = Schedule.objects.filter(league=league,
+    schedule = Schedule.objects.filter(league=league_id,
                                     week=week,
                                     played=False)
                                     
     play_game_batch(schedule)
     
-    return redirect('show_league_standings', league_id=league.id)
+    return redirect('show_league_standings', league_id=league_id)
 
 def play_league_remaining(request, league_id):
-    league = League.objects.get(id=league_id)
-    schedule = Schedule.objects.filter(league=league,
+    schedule = Schedule.objects.filter(league=league_id,
                                     played=False)
                                     
     play_game_batch(schedule)
     
-    return redirect('show_league_standings', league_id=league.id)
+    return redirect('show_league_standings', league_id=league_id)
 
 def play_season(league):
     play_unplayed_games(league)
@@ -378,7 +375,7 @@ def champion_determined(league):
 def manage_playoffs(league):
     logger = logging.getLogger('django.request')
     
-    year = Year.objects.get(universe=league.universe,
+    year = Year.objects.get(universe=league.universe_id,
                             current_year=True)
     teams_remaining = current_playoff_field_size(league)
     if not teams_remaining:
@@ -386,11 +383,11 @@ def manage_playoffs(league):
         teams_remaining = current_playoff_field_size(league)
     if teams_remaining == 1:
         if not champion_determined(league):
-            remaining_team = PlayoffTeams.objects.get(universe = league.universe,
+            remaining_team = PlayoffTeams.objects.get(universe = league.universe_id,
                                                       year = year,
                                                       league=league,
                                                       eliminated=False)
-            champ = Champions(universe=league.universe,
+            champ = Champions(universe=league.universe_id,
                               year=year,
                               league=league,
                               team=remaining_team.team)
@@ -407,7 +404,7 @@ def manage_playoffs(league):
     
     
 def determine_playoff_field(league):
-    year = Year.objects.get(universe=league.universe,
+    year = Year.objects.get(universe=league.universe_id,
                             current_year=True)
     sorted_standings = get_sorted_standings(league, year)
 
@@ -423,7 +420,7 @@ def determine_playoff_field(league):
     wild_card = sorted(wild_card, key=operator.attrgetter('pct', 'diff', 'score'), reverse=True)
     seed = 1
     for team in division_winners:
-        pt = PlayoffTeams(universe = league.universe,
+        pt = PlayoffTeams(universe = league.universe_id,
                           year = year,
                           league = league,
                           team = team.team,
@@ -434,7 +431,7 @@ def determine_playoff_field(league):
 
     number_wild_card = league.number_playoff_teams - len(division_winners)
     for team in wild_card[:number_wild_card]:
-        pt = PlayoffTeams(universe = league.universe,
+        pt = PlayoffTeams(universe = league.universe_id,
                           year = year,
                           league = league,
                           team = team.team,
@@ -444,9 +441,9 @@ def determine_playoff_field(league):
         seed += 1
 
 def generate_playoff_schedule(league):
-    year = Year.objects.get(universe=league.universe,
+    year = Year.objects.get(universe=league.universe_id,
                             current_year=True)
-    current_field = list(PlayoffTeams.objects.filter(universe=league.universe,
+    current_field = list(PlayoffTeams.objects.filter(universe=league.universe_id,
                                                      year=year,
                                                      league=league,
                                                      eliminated=False).order_by('seed'))
@@ -471,19 +468,19 @@ def generate_playoff_schedule(league):
 
     round_games=[]
     for x in xrange(len(current_round_teams)/2):
-        round_games.append(Game(universe=league.universe,
+        round_games.append(Game(universe=league.universe_id,
                                 year=year,
                                 home_team=current_round_teams[x].team,
                                 away_team=current_round_teams[-x-1].team,
                                 use_overtime=True,
                                 playoff_game = True))
 
-    max_week = Schedule.objects.filter(universe=league.universe,
+    max_week = Schedule.objects.filter(universe=league.universe_id,
                                        year=year,
                                        league=league).aggregate(Max('week'))['week__max']
     for game in round_games:
         game.save()
-        schedule = Schedule(universe=league.universe,
+        schedule = Schedule(universe=league.universe_id,
                      year=year,
                      league=league,
                      game=game,
@@ -494,7 +491,7 @@ def generate_playoff_schedule(league):
              
 def show_league_detail(request, league_id):
         league = League.objects.get(id=league_id)
-        year = Year.objects.get(universe=league.universe,
+        year = Year.objects.get(universe=league.universe_id,
                                 current_year=True)
         membership_history = LeagueMembership.objects.filter(league=league)
         years = []

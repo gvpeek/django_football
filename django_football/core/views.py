@@ -77,6 +77,8 @@ def create_year(universe, year):
         return new_year
 
 def advance_year(request,universe_id):
+        logger = logging.getLogger('django.request')
+        
         universe = Universe.objects.get(id=universe_id)
         ## putting this in an if condition so we don't execute a save if we don't need to
         if universe.new_player_delta_per_year:
@@ -86,8 +88,16 @@ def advance_year(request,universe_id):
         year = Year.objects.get(universe=universe,current_year=True)
         new_year = create_year(universe, year)
 
+        start_time = time.time()
         age_players(universe)
+        elapsed_time = time.time() - start_time
+        logger.info("Universe {0} players aged in {1} seconds".format(universe.name, elapsed_time))
+
+        start_time = time.time()        
         create_players(universe, universe.new_players_per_year)
+        elapsed_time = time.time() - start_time
+        logger.info("Universe {0} players created in {1} seconds".format(universe.name, elapsed_time))
+
         copy_league_memberships(universe, year, new_year)
         copy_rosters(universe, year, new_year)
         draft_players(universe)

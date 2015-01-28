@@ -73,6 +73,7 @@ def create_initial_universe_league(universe_id,
     league.save()
     
     conf_nbr=0
+    total_divisions=0
     for conference in conferences:
             div_nbr=0
             for division in conference:
@@ -89,9 +90,10 @@ def create_initial_universe_league(universe_id,
                                            team=team)
                             ts.save()
                     div_nbr+=1
+                    total_divisions+=1
             conf_nbr+=1
 
-    league.number_playoff_teams = randint((div_nbr),(len(available_teams)/2))
+    league.number_playoff_teams = randint((total_divisions),(len(available_teams)/2))
     league.save()
 
 def determine_nbr_div(nbr_teams):
@@ -532,7 +534,7 @@ def get_sorted_standings(league, year, return_team_object=False):
                     standings[item.conference][item.division]
             except:
                     standings[item.conference].append([])
-            stats = get_team_stats(universe=league.universe_id, year=year, team=item.team_id)
+            stats = get_team_stats(universe=league.universe, year=year, team=item.team)
             if return_team_object:
                 standings[item.conference][item.division].append(stats)                
             else:

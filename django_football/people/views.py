@@ -1,5 +1,6 @@
 import json
 import logging
+import time
 
 from math import floor, ceil, pow
 from random import randint, choice, shuffle
@@ -20,6 +21,8 @@ import names
 # TODO see if processing speed increases by converting stub to dictionary, removing need for string & int translations
 def create_player_stub(number):
     ''' player attributes are concatenated into a string which is used to track each player stub
+        The attrs are packed as follows: age, rating, apex age, rating increment, rating decrement, 
+        status, position
     '''
     players = ['11' + str(randint(25,40)) +
                str(int((floor(((32 * 100) * pow(randint(5,100),-.5)) / 100) + 18))) +
@@ -73,16 +76,16 @@ def age_player_stub(player_data, years=1):
 
 def seed_universe_players(universe, players_per_year):
     ''' This is a function to create, in bulk, the initial set of players for a given universe. Since the players 
-        will not be referenced, a stub of necessary attributes is used in this process. The player stubs are "aged" for 
-        50 years, with the remaining unretired players being instantiated into full player records and stored in 
-        the database.
+        will not be referenced, a stub of necessary attributes is used in this process. The player stubs are "aged" 
+        for a number of years, with the remaining unretired players being instantiated into full player records and 
+        stored in the database.
     '''
 
     # Main Logic
     logger = logging.getLogger('django.request')
     
     pl=[]
-    for x in xrange(50):
+    for x in xrange(40):
         pl = [age_player_stub(player) for player in pl]        
         pl = [player for player in pl if player[8] != 'R']
         pl.extend(create_player_stub(players_per_year))
@@ -113,6 +116,8 @@ def seed_universe_players(universe, players_per_year):
     logger.info('{0} players created in universe {1}.'.format(len(players), universe.name))
 
 def create_players(universe, number):
+    ''' This fuction is used to create players once a universe has already been initially seeded.
+    '''
     logger = logging.getLogger('django.request')
 
     players = [Player(universe=universe,
@@ -132,16 +137,19 @@ def create_players(universe, number):
     logger.info('{0} players created in universe {1}.'.format(len(players), universe.name))
 
 def determine_draft_needs(preference, roster):
-        filled=[]
-        for position in preference:
-                if getattr(roster, position.lower()):
-                        filled.append(position)
-        shuffle(filled)
-        for position in filled:
-                preference.remove(position)
-                preference.append(position)
-                
-        return preference
+    ''' Prioritizes positions to be drafted based on current roster. Vacant spots are put first then 
+        occupied positions. Position preference is maintained within each of these.
+    '''
+    filled=[]
+    for position in preference:
+            if getattr(roster, position.lower()):
+                    filled.append(position)
+    shuffle(filled)
+    for position in filled:
+            preference.remove(position)
+            preference.append(position)
+            
+    return preference
     
 def draft_players(universe):
     logger = logging.getLogger('django.request')
@@ -235,6 +243,10 @@ def draft_players(universe):
                                                                       method))
 
 def _check_rating_range(player,range):
+    ''' function to check if player is within the rating range for their given age range. If a player
+        is below the minimum range, they retire. If a player is above the maximum range, their rating
+        is set to the maximum.
+    '''
     if player.ratings < min(range):
         player.retired = True
         player.signed = False
@@ -246,10 +258,11 @@ def age_players(universe):
     logger = logging.getLogger('django.request')
     
     min_max_ratings = get_min_max_ratings()
-    active_players = Player.objects.filter(retired=False,universe=universe)
+    active_players = list(Player.objects.filter(retired=False,universe=universe))
 
     players_retired = 0
     for player in active_players:
+        start_time = time.time()
         player.age += 1
         if player.age <= player.apex_age:
             player.ratings += randint(1,player.growth_rate)
@@ -262,7 +275,12 @@ def age_players(universe):
         if player.retired:
             players_retired += 1
         player.save()
-        
+        elapsed_time = time.time() - start_time
+        logger.info("Player aged in {0} seconds".format(elapsed_time))
+
+    start_time = time.time()        
     transaction.commit()
+    elapsed_time = time.time() - start_time
+    logger.info("Player aging committed in {0} seconds".format(elapsed_time))
     
     logger.info('{0} players processed. {1} players retired'.format(len(active_players), players_retired))

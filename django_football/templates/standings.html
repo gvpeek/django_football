@@ -24,7 +24,7 @@
 						<tbody>
 							{% for team_stat in division %}
 							<tr>
-								<td><a href="/team/detail/{{ team_stat.team_id }}/{{ team_stat.year }}">{{ team_stat.team }}</a></td>
+								<td><a href="/team/detail/{{ team_stat.team_id.0 }}/{{ team_stat.year }}">{{ team_stat.team }}</a></td>
 								<td>{{ team_stat.wins }}</td>
 								<td>{{ team_stat.losses }}</td>
 								<td>{{ team_stat.ties }}</td>

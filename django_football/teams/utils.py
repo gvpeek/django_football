@@ -10,11 +10,14 @@ from django.core.exceptions import ObjectDoesNotExist
 
 import python_football
 
+from settings.base import SITE_ROOT
+
 from .models import Playbook, City, Nickname, Team
 from people import names
 from people.models import Coach, Player
 from teams.models import get_draft_position_order
 
+CSV_SOURCE_DIR = os.path.join(SITE_ROOT, 'teams', 'csv_source_files')
 
 ## Initialization Functions
 
@@ -25,7 +28,7 @@ def create_playbook():
 
 def initialize_cities():
     cities = []
-    with open(os.path.join('django_football','teams','csv_source_files','metroareas.csv'), 'r') as cities_file:
+    with open(os.path.join(CSV_SOURCE_DIR, 'metroareas.csv'), 'r') as cities_file:
         cities_reader = csv.reader(cities_file,delimiter=',')
         for city in cities_reader:
             cities.append(City(name=city[0],
@@ -41,7 +44,7 @@ def initialize_cities():
 
 def initialize_nicknames():
     nicknames = [] 
-    with open(os.path.join('django_football','teams','csv_source_files','nicknames.csv'), 'r') as nicknames_file:
+    with open(os.path.join(CSV_SOURCE_DIR, 'nicknames.csv'), 'r') as nicknames_file:
         nickname_reader = csv.reader(nicknames_file,delimiter=',')
         for nickname in nickname_reader:
             nicknames.append(Nickname(name=nickname[0],

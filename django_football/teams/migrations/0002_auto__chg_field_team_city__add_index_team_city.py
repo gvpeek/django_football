@@ -12,7 +12,13 @@ class Migration(SchemaMigration):
         # Renaming column for 'Team.city' to match new field type.
         db.rename_column(u'teams_team', 'city', 'city_id')
         # Changing field 'Team.city'
-        db.alter_column(u'teams_team', 'city_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['teams.City']))
+        # db.alter_column(u'teams_team', 'city_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['teams.City']))
+        db.execute(
+            'ALTER TABLE "teams_team" '
+            'ALTER COLUMN "city_id" DROP DEFAULT, '
+            'ALTER COLUMN "city_id" DROP NOT NULL, '
+            'ALTER COLUMN "city_id" TYPE integer USING 0'
+        )
         # Adding index on 'Team', fields ['city']
         db.create_index(u'teams_team', ['city_id'])
 

@@ -2,10 +2,20 @@
 
 from __future__ import absolute_import
 
+import os
 from os.path import join, normpath
+
+from django.core.exceptions import ImproperlyConfigured
 
 from .base import *
 
+def get_env_variable(var_name):
+    '''Get the environment variable or return exception'''
+    try:
+        return os.environ[var_name]
+    except Exception, e:
+        print e
+        raise ImproperlyConfigured('Set the {0} environment variable'.format(var_name))
 
 ########## DEBUG CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#debug
@@ -26,12 +36,11 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#databases
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': normpath(join(DJANGO_ROOT, 'default.db')),
-        'USER': '',
-        'PASSWORD': '',
-        'HOST': '',
-        'PORT': '',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'django_football',                      
+        'USER': 'postgres',
+        'PASSWORD': get_env_variable('POSTGRES_PASSWORD'),
+        'HOST': '127.0.0.1'
     }
 }
 ########## END DATABASE CONFIGURATION

@@ -10,13 +10,14 @@ from collections import OrderedDict, deque
 from django.shortcuts import render
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from django.db.models import F
+
+import names
 
 from .models import Player
 from core.models import Year
 from stats.models import TeamStats
 from teams.models import Team, Roster
-
-import names
 
 # TODO see if processing speed increases by converting stub to dictionary, removing need for string & int translations
 def create_player_stub(number):
@@ -46,10 +47,10 @@ def _check_rating_range_stub(rating, rating_range, status):
     return rating, status
 
 def get_min_max_ratings():
-    return [(14,(20,50)), # (age, (min,max))
-            (18,(30,60)),
-            (22,(45,75)),
-            (99,(60,90))]
+    return [((11,14),(20,50)), # (age, (min,max))
+            ((15,18),(30,60)),
+            ((19,22),(45,75)),
+            ((23,99),(60,90))]
 
 def age_player_stub(player_data, years=1):
     ''' function to break apart player stub and age them a single year
@@ -253,34 +254,46 @@ def _check_rating_range(player,range):
     elif player.ratings > max(range):
         player.ratings = max(range)
 
-@transaction.commit_manually
+def determine_player_rating(age, apex_age, ratings, growth_rate, declination_rate):
+    logger = logging.getLogger('django.request')
+    start_time = time.time()
+    if age <= apex_age:
+        ratings += randint(1,growth_rate)
+    else:
+        ratings -= randint(3,declination_rate)
+    elapsed_time = time.time() - start_time
+    logger.info("Player rating calculated in {0} seconds".format(elapsed_time))
+    
+    return ratings
+
+# @transaction.commit_manually
 def age_players(universe):
     logger = logging.getLogger('django.request')
     
     min_max_ratings = get_min_max_ratings()
-    active_players = list(Player.objects.filter(retired=False,universe=universe))
+
+    # active_players = []
+    start_time = time.time()
+    active_players = Player.objects.filter(retired=False,
+                                           universe=universe).update(age = F('age') + 1, 
+                                                                     ratings = F('future_ratings'))
+    elapsed_time = time.time() - start_time
+    logger.info("Players age and ratings in {0} seconds".format(elapsed_time))
 
     players_retired = 0
-    for player in active_players:
-        start_time = time.time()
-        player.age += 1
-        if player.age <= player.apex_age:
-            player.ratings += randint(1,player.growth_rate)
-        else:
-            player.ratings -= randint(3,player.declination_rate)
-        for age,ratings in min_max_ratings:
-            if player.age <= age:
-                _check_rating_range(player, ratings)
-                break
-        if player.retired:
-            players_retired += 1
-        player.save()
-        elapsed_time = time.time() - start_time
-        logger.info("Player aged in {0} seconds".format(elapsed_time))
 
-    start_time = time.time()        
-    transaction.commit()
+    start_time = time.time()
+    for age,ratings in min_max_ratings:
+        players_retired += Player.objects.filter(retired=False,
+                                                 universe=universe,
+                                                 age__gte=age[0],
+                                                 ratings__lt=ratings[0]).update(retired=True)
+        Player.objects.filter(retired=False,
+                              universe=universe,
+                              age__gte=age[0], 
+                              age__lte=age[1], 
+                              ratings__gt=ratings[1]).update(ratings=ratings[1])
     elapsed_time = time.time() - start_time
-    logger.info("Player aging committed in {0} seconds".format(elapsed_time))
+    logger.info("Players normailzed in {0} seconds".format(elapsed_time))
     
     logger.info('{0} players processed. {1} players retired'.format(len(active_players), players_retired))

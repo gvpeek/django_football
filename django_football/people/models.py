@@ -35,7 +35,7 @@ class Player(models.Model):
     growth_rate = models.IntegerField()
     declination_rate = models.IntegerField()
     ratings = models.IntegerField() # need to convert to dict
-    future_ratings = models.IntegerField() # need to convert to dict
+    future_ratings = models.IntegerField(default=0) # need to convert to dict
 
     class Meta:
         app_label = 'people'

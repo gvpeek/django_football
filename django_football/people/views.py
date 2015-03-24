@@ -15,6 +15,7 @@ from django.db.models import F
 import names
 
 from .models import Player
+from .tasks import calculate_future_ratings
 from core.models import Year
 from stats.models import TeamStats
 from teams.models import Team, Roster
@@ -69,8 +70,8 @@ def age_player_stub(player_data, years=1):
             rating += randint(1,inc)
         else:
             rating -= randint(3,dec)
-        for range_max,ratings in min_max_ratings:
-            if age <= range_max:
+        for range,ratings in min_max_ratings:
+            if age <= range[1]:
                 rating, status = _check_rating_range_stub(rating, ratings, status)
                 break
         return str(age)+str(rating)+str(apex)+str(inc)+str(dec)+status+position
@@ -254,18 +255,6 @@ def _check_rating_range(player,range):
     elif player.ratings > max(range):
         player.ratings = max(range)
 
-def determine_player_rating(age, apex_age, ratings, growth_rate, declination_rate):
-    logger = logging.getLogger('django.request')
-    start_time = time.time()
-    if age <= apex_age:
-        ratings += randint(1,growth_rate)
-    else:
-        ratings -= randint(3,declination_rate)
-    elapsed_time = time.time() - start_time
-    logger.info("Player rating calculated in {0} seconds".format(elapsed_time))
-    
-    return ratings
-
 # @transaction.commit_manually
 def age_players(universe):
     logger = logging.getLogger('django.request')
@@ -296,4 +285,6 @@ def age_players(universe):
     elapsed_time = time.time() - start_time
     logger.info("Players normailzed in {0} seconds".format(elapsed_time))
     
-    logger.info('{0} players processed. {1} players retired'.format(len(active_players), players_retired))
+    calculate_future_ratings.delay(universe)
+    
+    logger.info('{0} players processed. {1} players retired'.format(active_players, players_retired))

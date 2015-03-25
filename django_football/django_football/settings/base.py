@@ -1,9 +1,20 @@
 """Common settings and globals."""
 
+import os
+
 from os import listdir
 from os.path import abspath, basename, dirname, join, normpath
 from sys import path
 
+from django.core.exceptions import ImproperlyConfigured
+
+def get_env_variable(var_name):
+    '''Get the environment variable or return exception'''
+    try:
+        return os.environ[var_name]
+    except Exception, e:
+        print e
+        raise ImproperlyConfigured('Set the {0} environment variable'.format(var_name))
 
 ########## PATH CONFIGURATION
 # Absolute filesystem path to the Django project directory:
@@ -114,7 +125,7 @@ STATICFILES_FINDERS = (
 ########## SECRET CONFIGURATION
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#secret-key
 # Note: This key should only be used for development and testing.
-SECRET_KEY = r"9%two650(g$77y39juqx))gcncw_)3pin!u+9an((p299i)7)8"
+SECRET_KEY = get_env_variable('DJANGO_FOOTBALL_SECRET_KEY')
 ########## END SECRET CONFIGURATION
 
 

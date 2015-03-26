@@ -10,6 +10,7 @@ from django.template import RequestContext, loader
 from .models import Universe, Year
 from .forms import CreateUniverseForm
 from people.views import seed_universe_players, draft_players, age_players, create_players
+from people.tasks import calculate_future_ratings
 from teams.utils import initialize_team_source_data, create_initial_universe_teams
 from leagues.views import (create_initial_universe_league, create_schedule, 
                            copy_league_memberships, copy_rosters, champion_determined)
@@ -38,6 +39,8 @@ def universe_create(request):
     seed_universe_players(universe,universe.new_players_per_year)
     elapsed_time = time.time() - start_time
     logger.info("Universe {0} players seeded in {1} seconds".format(universe.name, elapsed_time))
+    
+    calculate_future_ratings.delay(universe)
     
     initialize_team_source_data()
 

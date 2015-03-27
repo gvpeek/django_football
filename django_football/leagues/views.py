@@ -314,12 +314,17 @@ def eliminate_playoff_team(league, team):
     loser.save()
 
 def play_game_batch(schedule_list):
+    logger = logging.getLogger('django.request')
+    
+    start_time = time.time()
     for entry in schedule_list:
         loser = play_game(entry.game_id, entry.playoff_game)
         entry.played=True
         entry.save()
         if entry.playoff_game:
             eliminate_playoff_team(entry.league, loser)
+    elapsed_time = time.time() - start_time
+    logger.info('{0} games played in {1} seconds.'.format(len(schedule_list), elapsed_time))
         
     try:
         if entry:

@@ -196,7 +196,7 @@ def draft_players(universe):
         if nbr_positions < len(draft_preference[team]):
                 nbr_positions=len(draft_preference[team])
                 
-    logger.info('Draft order ' + str(draft_preference))
+    # logger.info('Draft order ' + str(draft_preference))
     
     ## need to set team here for first check of presence of key
     team = draft_preference.keys()[0]
@@ -223,11 +223,11 @@ def draft_players(universe):
                     if current_player:
                         current_player.signed=False
                         current_player.save()
-                        logger.info('{0} {1} {2} {3} {4} was cut.'.format(team.city,
-                                                                          team.nickname,
-                                                                          pick_position,
-                                                                          current_player.first_name,
-                                                                          current_player.last_name))
+                        # logger.info('{0} {1} {2} {3} {4} was cut.'.format(team.city,
+                        #                                                   team.nickname,
+                        #                                                   pick_position,
+                        #                                                   current_player.first_name,
+                        #                                                   current_player.last_name))
                     setattr(roster,pick_position.lower(),player)
                     setattr(roster,pick_position.lower()+'_age',player.age)
                     setattr(roster,pick_position.lower()+'_rating',player.ratings)
@@ -236,13 +236,13 @@ def draft_players(universe):
                     player.save()
                     selected = True
             
-                    method = 'drafted' if player.age == 23 else 'signed'
-                    logger.info('{0} {1} {2} {3} {4} was {5}.'.format(team.city,
-                                                                      team.nickname,
-                                                                      pick_position,
-                                                                      player.first_name,
-                                                                      player.last_name,
-                                                                      method))
+                    # method = 'drafted' if player.age == 23 else 'signed'
+                    # logger.info('{0} {1} {2} {3} {4} was {5}.'.format(team.city,
+                    #                                                   team.nickname,
+                    #                                                   pick_position,
+                    #                                                   player.first_name,
+                    #                                                   player.last_name,
+                    #                                                   method))
 
 def _check_rating_range(player,range):
     ''' function to check if player is within the rating range for their given age range. If a player

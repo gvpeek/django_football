@@ -9,7 +9,19 @@ import stats.views
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
+
+from core.api import UniverseResource, YearResource
+from leagues.api import ChampionsResource, LeagueResource
+from teams.api import TeamResource, CityResource
+
 admin.autodiscover()
+
+universe_resource = UniverseResource()
+year_resource = YearResource()
+league_resource = LeagueResource()
+team_resource = TeamResource()
+city_resource = CityResource()
+champions_resource = ChampionsResource()
 
 urlpatterns = patterns('',
     url(r'^$', core.views.index, name='index'),
@@ -27,7 +39,13 @@ urlpatterns = patterns('',
     url(r'team/detail/(?P<team_id>\d+)/(?P<year>\d+)/$', teams.views.show_team_detail, name='show_team_detail'),
     
     url(r'stats/game/(?P<game_id>\d+)/$', stats.views.game_stats, name='show_game_stats'),
-    
+
+    (r'^api/', include(universe_resource.urls)),
+    (r'^api/', include(year_resource.urls)),
+    (r'^api/', include(league_resource.urls)),
+    (r'^api/', include(team_resource.urls)),
+    (r'^api/', include(city_resource.urls)),
+    (r'^api/', include(champions_resource.urls)),
 
     # Examples:
     # url(r'^$', 'django_football.views.home', name='home'),

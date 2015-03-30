@@ -215,6 +215,7 @@ LOCAL_APPS = (
     'teams',
     'leagues',
     'stats',
+    'tastypie',
 )
 
 # See: https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps

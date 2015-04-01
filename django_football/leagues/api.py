@@ -14,7 +14,7 @@ class LeagueResource(ModelResource):
 
 class ChampionsResource(ModelResource):
     universe = fields.ForeignKey(UniverseResource, 'universe')
-    year = fields.ForeignKey(YearResource, 'year')
+    year = fields.ForeignKey(YearResource, 'year', full=True)
     league = fields.ForeignKey(LeagueResource, 'league')
     team = fields.ForeignKey(TeamResource, 'team', full=True)
     

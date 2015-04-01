@@ -14,3 +14,4 @@ class TeamResource(ModelResource):
     class Meta:
         queryset = Team.objects.all()
         resource_name = 'team'
+        excludes = ['primary_color', 'secondary_color']

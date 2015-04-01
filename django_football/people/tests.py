@@ -7,9 +7,7 @@ from .views import get_min_max_ratings, _check_rating_range_stub, age_players
 
 class PlayerTest(TestCase):
     def setUp(self):
-        Universe.objects.create(name='Test')
-        
-        universe = Universe.objects.get(name='Test')
+        universe = Universe.objects.create(name='Test')
         
         Player.objects.create(universe=universe,
                       first_name='Smiley',

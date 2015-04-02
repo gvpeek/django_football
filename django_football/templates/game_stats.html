@@ -3,7 +3,9 @@
 
 {% block content %}
 
-<a href='/league/standings/{{ universe_id }}/{{ year }}'>Standings</a>
+{% if league_id %}
+<a href='/league/standings/{{ league_id }}/{{ year }}'>Standings</a>
+{% endif %}
 
 <table class="game_display">
 	<tr>

@@ -1,15 +1,24 @@
+import logging
+
 from ast import literal_eval
 
 from django.shortcuts import render
 from django.http import HttpResponse
 from django.template import RequestContext, loader
+from django.core.exceptions import ObjectDoesNotExist
 
 from .models import GameStats
-from leagues.models import Game
+from leagues.models import Game, Schedule
 
-def game_stats(request, game_id):
+logger = logging.getLogger('django.request')
+
+def game_stats(request, game_id):    
     game = Game.objects.get(id=game_id)
     team_stats = GameStats.objects.filter(game=game)
+    try:
+        league_id = Schedule.objects.get(game=game).league.id
+    except ObjectDoesNotExist, e:
+        logger.info('Stats being retrieved for a game not associated with a league.')
     
     if team_stats[0].team_id == game.home_team_id:
         home_team_stats = team_stats[0]
@@ -36,6 +45,7 @@ def game_stats(request, game_id):
     context = RequestContext(request, {
         'universe_id' : game.universe_id,
         'year' : game.year.year,
+        'league_id' : league_id,
         'home_team_stats' : home_team_stats,
         'home_score_by_period' : home_score_by_period,
         'away_team_stats' : away_team_stats,

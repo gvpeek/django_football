@@ -1,4 +1,5 @@
 from tastypie import fields
+from tastypie.constants import ALL, ALL_WITH_RELATIONS
 from tastypie.resources import ModelResource
 
 from .models import Champions, League
@@ -21,3 +22,4 @@ class ChampionsResource(ModelResource):
     class Meta:
         queryset = Champions.objects.all()
         resource_name = 'champions'
+        filtering = { 'team' : ALL_WITH_RELATIONS }

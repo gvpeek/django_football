@@ -13,7 +13,8 @@
 		{% if years %}
 		<ul>
 			{% for year in years %}
-				{% ifchanged year %}<li>{{ year }} - <a href="league/standings/{{ league.id }}/{{ year }}/">Standings</a></li>{% endifchanged %}
+        {% url 'leagues.views.show_standings' league.id year as standings_link %}
+				{% ifchanged year %}<li>{{ year }} - <a href="{{ standings_link }}">Standings</a></li>{% endifchanged %}
 			{% endfor %}
 		</ul>
 		{% endif %}	

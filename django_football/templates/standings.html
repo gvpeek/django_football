@@ -24,7 +24,8 @@
 						<tbody>
 							{% for team_stat in division %}
 							<tr>
-								<td><a href="/team/detail/{{ team_stat.team_id.0 }}/{{ team_stat.year }}">{{ team_stat.team }}</a></td>
+                {% url 'teams.views.show_team_detail' team_stat.team_id.0 team_stat.year as team_detail %}
+								<td><a href="{{ team_detail }}">{{ team_stat.team }}</a></td>
 								<td>{{ team_stat.wins }}</td>
 								<td>{{ team_stat.losses }}</td>
 								<td>{{ team_stat.ties }}</td>
@@ -60,12 +61,13 @@
             <div class="action">
               {% if next_game_id == game.id %}
                 <p id="action_indicator">Play
-                  <a href="/league/play_game/{{ game.id }}">Game</a> | 
-                  <a href="/league/play_week/{{ league.id }}/{{ week }}">Week</a> | 
-                  <a href="/league/play_remaining/{{ league.id }}/">Remaining</a> | 
+                  <a href="{% url 'leagues.views.play_league_game' game.id %}">Game</a> | 
+                  <a href="{% url 'leagues.views.play_league_week' league.id  week %}">Week</a> | 
+                  <a href="{% url 'leagues.views.play_league_remaining' league.id %}">Remaining</a> | 
                 </p>
               {% elif game.teams.0.period_scores %}
-                <a href="stats/game/{{ game.id }}">Show Stats</a>
+                {% url 'stats.views.game_stats' game.id as game_stats %}
+                <a href="{{ game_stats }}">Show Stats</a>
               {% endif %}
             </div>
           </div>

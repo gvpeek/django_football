@@ -497,22 +497,22 @@ def generate_playoff_schedule(league):
         schedule.save()
              
 def show_league_detail(request, league_id):
-        league = League.objects.get(id=league_id)
-        year = Year.objects.get(universe=league.universe_id,
-                                current_year=True)
-        membership_history = LeagueMembership.objects.filter(league=league)
-        years = []
-        for item in membership_history:
-                years.append(item.year)
-        
-        template = loader.get_template('league_detail.html')
-        context = RequestContext(request, {
-                'league' : league,
-                'years' : years,
-                'league_teams' : [entry.team for entry in membership_history if entry.year == year],
-        })
-        
-        return HttpResponse(template.render(context))
+    league = League.objects.get(id=league_id)
+    year = Year.objects.get(universe=league.universe_id,
+                            current_year=True)
+    membership_history = LeagueMembership.objects.filter(league=league)
+    years = []
+    for item in membership_history:
+            years.append(item.year)
+    
+    template = loader.get_template('league_detail.html')
+    context = RequestContext(request, {
+            'league' : league,
+            'years' : years,
+            'league_teams' : [entry.team for entry in membership_history if entry.year == year],
+    })
+    
+    return HttpResponse(template.render(context))
 
 def get_team_name(team_id):
     logger = logging.getLogger('django.request')

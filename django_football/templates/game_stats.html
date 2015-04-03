@@ -4,7 +4,7 @@
 {% block content %}
 
 {% if league_id %}
-<a href='/league/standings/{{ league_id }}/{{ year }}'>Standings</a>
+<a href='{% url 'leagues.views.show_standings' league_id year %}'>Standings</a>
 {% endif %}
 
 <table class="game_display">

@@ -4,7 +4,7 @@ import json
 import pickle
 import logging
 
-from random import choice, randint
+from random import choice, randint, shuffle
 
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -86,16 +86,24 @@ def create_initial_universe_teams(universe, level):
     logger = logging.getLogger('django.request')
     
     number_teams = determine_number_pro_teams(universe)
+    cities = []
+    nicknames = []
     if level == 'any':
-        cities = City.objects.all()
-        nicknames = Nickname.objects.all()
+        while len(cities) < number_teams:
+            cities.extend(City.objects.all())
+        while len(nicknames) < number_teams:
+            nicknames.extend(Nickname.objects.all())
     elif level in ['pro', 'semipro', 'amateur']:
         level_filter = {}
         level_filter[level] = True
-        cities = City.objects.filter(**level_filter)
-        nicknames = Nickname.objects.filter(**level_filter)
+        while len(cities) < number_teams:
+            cities.extend(City.objects.filter(**level_filter))
+        while len(nicknames) < number_teams:
+            nicknames.extend(Nickname.objects.filter(**level_filter))
     else:
         return HttpResponse("Invalid level for team creation.")
+    shuffle(cities)
+    shuffle(nicknames)
         
     coaches = [Coach(universe=universe,
                      first_name=names.first_name(),
@@ -106,9 +114,10 @@ def create_initial_universe_teams(universe, level):
                                        ) for x in xrange(int(number_teams))]
     for coach in coaches:
             coach.save()
+
     teams = [Team(universe=universe,
-                  city=choice(cities),
-                  nickname=choice(nicknames),
+                  city=cities.pop(),
+                  nickname=nicknames.pop(),
                   human_control=False,
                   home_field_advantage=randint(1,3),
                   draft_position_order = get_draft_position_order(),

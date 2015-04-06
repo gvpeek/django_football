@@ -165,6 +165,8 @@ def draft_players(universe):
     except ObjectDoesNotExist, e:
         logger.info('No previous year - {0}'.format(e))
 
+
+    start_time = time.time()
     teams=[]
     try:
         team_order=TeamStats.objects.filter(universe=universe,
@@ -178,7 +180,12 @@ def draft_players(universe):
         teams = Team.objects.filter(universe=universe)
         shuffle(list(teams))
         
+    elapsed_time = time.time() - start_time
+    logger.info("Universe {0} draft order determined in {1} seconds".format(universe.name, elapsed_time))    
+    
+    start_time = time.time()
     draft_preference = OrderedDict()
+    rosters = {}
     nbr_positions = 0 
     for team in teams:
         try:
@@ -191,12 +198,16 @@ def draft_players(universe):
                        team=team)
             roster.save()
             
+        rosters[team] = roster
+            
         draft_preference[team] = deque()
         draft_preference[team].extend(determine_draft_needs(deepcopy(json.loads(team.draft_position_order)), roster))
         if nbr_positions < len(draft_preference[team]):
                 nbr_positions=len(draft_preference[team])
                 
-    # logger.info('Draft order ' + str(draft_preference))
+                
+    elapsed_time = time.time() - start_time
+    logger.info("Universe {0} draft preferences determined in {1} seconds".format(universe.name, elapsed_time))  
     
     ## need to set team here for first check of presence of key
     team = draft_preference.keys()[0]
@@ -204,6 +215,7 @@ def draft_players(universe):
         if not draft_preference[team]:
             del draft_preference[team]
         for team in draft_preference:
+            start_time = time.time()
             selected = False
             while not selected and draft_preference[team]:
                 pick_position = draft_preference[team].popleft()
@@ -212,9 +224,7 @@ def draft_players(universe):
                                                 retired=False,
                                                 signed=False,
                                                 age__gte=23).order_by('ratings').reverse()
-                roster = Roster.objects.get(universe=universe,
-                                            year=current_year,
-                                            team=team)
+                roster = rosters[team]
                 player = players[0]
                 current_player = getattr(roster, pick_position.lower())
                 if not current_player or \
@@ -235,7 +245,8 @@ def draft_players(universe):
                     player.signed=True
                     player.save()
                     selected = True
-            
+            elapsed_time = time.time() - start_time
+            logger.info("Universe {0} team {1} player drafted in {2} seconds".format(universe.name, team.id, elapsed_time))
                     # method = 'drafted' if player.age == 23 else 'signed'
                     # logger.info('{0} {1} {2} {3} {4} was {5}.'.format(team.city,
                     #                                                   team.nickname,

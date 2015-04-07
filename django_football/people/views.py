@@ -1,6 +1,7 @@
 import json
 import logging
 import time
+import heapq
 
 from math import floor, ceil, pow
 from random import randint, choice, shuffle
@@ -209,23 +210,38 @@ def draft_players(universe):
     elapsed_time = time.time() - start_time
     logger.info("Universe {0} draft preferences determined in {1} seconds".format(universe.name, elapsed_time))  
     
+    ## create map of positions to available players
+    available_players = {}
+    for position in Player.POSITIONS:
+        position = position[0]
+        player_heap=[]
+        players = Player.objects.filter(universe=universe,
+                                        position=position,
+                                        retired=False,
+                                        signed=False,
+                                        age__gte=23)
+        for player in players:
+            heapq.heappush(player_heap, (100-player.ratings, player))
+        
+        available_players[position] = player_heap
+        
+    
     ## need to set team here for first check of presence of key
     team = draft_preference.keys()[0]
     while draft_preference:
         if not draft_preference[team]:
             del draft_preference[team]
         for team in draft_preference:
-            start_time = time.time()
             selected = False
             while not selected and draft_preference[team]:
                 pick_position = draft_preference[team].popleft()
-                players = Player.objects.filter(universe=universe,
-                                                position=pick_position,
-                                                retired=False,
-                                                signed=False,
-                                                age__gte=23).order_by('ratings').reverse()
+                # players = Player.objects.filter(universe=universe,
+                #                                 position=pick_position,
+                #                                 retired=False,
+                #                                 signed=False,
+                #                                 age__gte=23).order_by('ratings').reverse()
                 roster = rosters[team]
-                player = players[0]
+                player = heapq.heappop(available_players[pick_position])[1]
                 current_player = getattr(roster, pick_position.lower())
                 if not current_player or \
                         (player.ratings >  current_player.ratings): # and player.age < current_player.age 
@@ -233,6 +249,7 @@ def draft_players(universe):
                     if current_player:
                         current_player.signed=False
                         current_player.save()
+                        heapq.heappush(available_players[pick_position], (100 - current_player.ratings, current_player))
                         # logger.info('{0} {1} {2} {3} {4} was cut.'.format(team.city,
                         #                                                   team.nickname,
                         #                                                   pick_position,
@@ -245,8 +262,9 @@ def draft_players(universe):
                     player.signed=True
                     player.save()
                     selected = True
-            elapsed_time = time.time() - start_time
-            logger.info("Universe {0} team {1} player drafted in {2} seconds".format(universe.name, team.id, elapsed_time))
+                else:
+                    heapq.heappush(available_players[pick_position], (100 - player.ratings, player))
+                    
                     # method = 'drafted' if player.age == 23 else 'signed'
                     # logger.info('{0} {1} {2} {3} {4} was {5}.'.format(team.city,
                     #                                                   team.nickname,

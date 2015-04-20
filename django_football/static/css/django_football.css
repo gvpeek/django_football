@@ -35,3 +35,7 @@ td, th {
 .championship {
   font-weight: bold;
 }
+
+.even {
+  background-color: lightgray;
+}

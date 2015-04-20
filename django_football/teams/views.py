@@ -81,13 +81,13 @@ def show_team_history(request, team_id):
     championship_years = [champion.year.year for champion in Champions.objects.select_related().filter(team=team_id)]
     playoff_years = {playoff.year.year : playoff.seed for playoff in PlayoffTeams.objects.select_related().filter(team=team_id)}
     print playoff_years
-    team_rosters = None
+    team_rosters = Roster.objects.filter(team=team_id).order_by('year')
     
     template = loader.get_template('team_history.html')
     context = RequestContext(request, {
             'team' : team,
             'team_stats' : team_stats,
-            'team_roaters' : team_rosters,
+            'team_rosters' : team_rosters,
             'championship_years' : championship_years,
             'playoff_years' : playoff_years,
     })

@@ -6,31 +6,79 @@
 	{% if team %}
 		<h1>{{ team.city }} {{ team.nickname }}</h1>
 
-        <table>
-            <tr>
-                <th>Year</th>
-                <th>W</th>
-                <th>L</th>
-                <th>T</th>
-                <th>Pct.</th>
-            </tr>
-		{% for stat in team_stats %}
-            {% if stat.year.year in championship_years %}
-                <tr class="championship">
-            {% else %}
+        <h2>Records</h2>
+        <div id="standings_history">
+            <table>
                 <tr>
-            {% endif %}
-                {% with stat.year.year as year %}
-                <th>{{ year }}</th>
-                <td>{{ stat.wins }}</td>
-                <td>{{ stat.losses }}</td>
-                <td>{{ stat.ties }}</td>
-                <td>{{ stat.pct }}</td>
-                <td>{{ playoff_years | dictget:year }}</td>
-                {% endwith %}
-            </tr>
-        {% endfor %}
-        </table>
+                    <th>Year</th>
+                    <th>W</th>
+                    <th>L</th>
+                    <th>T</th>
+                    <th>Pct.</th>
+                </tr>
+    		{% for stat in team_stats %}
+                {% if stat.year.year in championship_years %}
+                    <tr class="championship">
+                {% else %}
+                    <tr>
+                {% endif %}
+                    {% with stat.year.year as year %}
+                    <th>{{ year }}</th>
+                    <td>{{ stat.wins }}</td>
+                    <td>{{ stat.losses }}</td>
+                    <td>{{ stat.ties }}</td>
+                    <td>{{ stat.pct }}</td>
+                    <td>{{ playoff_years | dictget:year }}</td>
+                    {% endwith %}
+                </tr>
+            {% endfor %}
+            </table>
+        </div>
+        
+        <h2>Rosters</h2>
+        <div id="roster_history">
+            <table>
+                <tr>
+                    <td>Year</td>
+                    <td>QB</td>
+                    <td>RB</td>
+                    <td>WR</td>
+                    <td>OG</td>
+                    <td>OT</td>
+                    <td>C</td>
+                    <td>DE</td>
+                    <td>DT</td>
+                    <td>LB</td>
+                    <td>CB</td>
+                    <td>S</td>
+                    <td>K</td>
+                    <td>P</td>
+                </tr>
+                {% for roster in team_rosters %}
+                    {% cycle 'even' 'odd' as row_style %}
+                    {% if roster.year.year in championship_years %}
+                        <tr class="championship {{ row_style }}">
+                    {% else %}
+                        <tr class="{{ row_style }}">
+                    {% endif %}
+                            <td>{{ roster.year.year }}
+                            <td>{{ roster.qb }}</td>
+                            <td>{{ roster.rb }}</td>
+                            <td>{{ roster.wr }}</td>
+                            <td>{{ roster.og }}</td>
+                            <td>{{ roster.ot }}</td>
+                            <td>{{ roster.c }}</td>
+                            <td>{{ roster.de }}</td>
+                            <td>{{ roster.dt }}</td>
+                            <td>{{ roster.lb }}</td>
+                            <td>{{ roster.cb }}</td>
+                            <td>{{ roster.s }}</td>
+                            <td>{{ roster.k }}</td>
+                            <td>{{ roster.p }}</td>
+                        </tr>
+                {% endfor %}
+            </table>
+        </div>
 	{% endif %}
 	
 {% endblock %}

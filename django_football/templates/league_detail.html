@@ -6,7 +6,7 @@
     {% if league_teams %}
     <ul>
       {% for team in league_teams %}
-      <li>{{ team.city }} {{ team.nickname }}</li>
+      <li><a href="{% url 'teams.views.show_team_history' team.id %}">{{ team.city }} {{ team.nickname }}</a></li>
       {% endfor %}
     </ul>
     {% endif %}

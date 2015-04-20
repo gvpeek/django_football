@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% load teams_extras %}
+
+{% block content %}
+
+	{% if team %}
+		<h1>{{ team.city }} {{ team.nickname }}</h1>
+
+        <table>
+            <tr>
+                <th>Year</th>
+                <th>W</th>
+                <th>L</th>
+                <th>T</th>
+                <th>Pct.</th>
+            </tr>
+		{% for stat in team_stats %}
+            {% if stat.year.year in championship_years %}
+                <tr class="championship">
+            {% else %}
+                <tr>
+            {% endif %}
+                {% with stat.year.year as year %}
+                <th>{{ year }}</th>
+                <td>{{ stat.wins }}</td>
+                <td>{{ stat.losses }}</td>
+                <td>{{ stat.ties }}</td>
+                <td>{{ stat.pct }}</td>
+                <td>{{ playoff_years | dictget:year }}</td>
+                {% endwith %}
+            </tr>
+        {% endfor %}
+        </table>
+	{% endif %}
+	
+{% endblock %}

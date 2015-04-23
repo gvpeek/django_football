@@ -2,36 +2,37 @@
 {% block content %}
 
 	<h1>{{ team.city }} {{ team.nickname }}</h1>
+    <a href="{% url 'teams.views.show_team_history' team.id %}">Team History</a>
 
-  <div id="team_roster">
+    <div id="team_roster">
     <h2>Roster</h2>
-  	{% if roster %}
-  		<table>
-  			<thead>
-  				<tr>
-  					<th>Name</th>
-  					<th>Position</th>
-  					<th>Age</th>
-  					<th>Rating</th>
-  				</tr>
-  			</thead>
-  			<tbody>
-  				{% for player, age, rating in roster %}
-  				<tr>
-  					<td>{{ player.last_name }}, {{ player.first_name }}</td>
-  					<td>{{ player.position }}</td>
-  					<td>{{ age }}</td>
-  					<td>{{ rating }}</td>
-  				</tr>
-  				{% endfor %}
-  			</tbody>
-  		</table>
-  	{% else %}
-  		<p>No players on this team.</p>
-  	{% endif %}
-  </div>
-	
-  <div id="team_schedule">
+    {% if roster %}
+    	<table>
+    		<thead>
+    			<tr>
+    				<th>Name</th>
+    				<th>Position</th>
+    				<th>Age</th>
+    				<th>Rating</th>
+    			</tr>
+    		</thead>
+    		<tbody>
+    			{% for player, age, rating in roster %}
+    			<tr>
+    				<td>{{ player.last_name }}, {{ player.first_name }}</td>
+    				<td>{{ player.position }}</td>
+    				<td>{{ age }}</td>
+    				<td>{{ rating }}</td>
+    			</tr>
+    			{% endfor %}
+    		</tbody>
+    	</table>
+    {% else %}
+    	<p>No players on this team.</p>
+    {% endif %}
+    </div>
+
+    <div id="team_schedule">
     <h2>Schedule</h2>
     {% if team_schedule %}
       <table>
@@ -52,9 +53,9 @@
           {% endfor %}
         </tbody>
       </table>
-  	{% else %}
-  		<p>No players on this team.</p>
-  	{% endif %}
-  </div>
-  
+    {% else %}
+    	<p>No players on this team.</p>
+    {% endif %}
+    </div>
+
 {% endblock %}

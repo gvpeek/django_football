@@ -6,7 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from .models import Team, Roster
 from core.models import Year
 from leagues.models import Game, Schedule, Champions, PlayoffTeams
-from stats.models import GameStats, TeamStats
+from stats.models import GameStats, TeamStats, PlayoffTeamStats
 
 def get_game_outcome(game, team, opponent):
     try:
@@ -78,6 +78,7 @@ def show_team_detail(request, team_id, year):
 def show_team_history(request, team_id):
     team = Team.objects.get(id=team_id)
     team_stats = TeamStats.objects.filter(team=team_id).order_by('year')
+    playoff_stats = PlayoffTeamStats.objects.filter(team=team_id).order_by('year')
     championship_years = [champion.year.year for champion in Champions.objects.select_related().filter(team=team_id)]
     playoff_years = {playoff.year.year : playoff.seed for playoff in PlayoffTeams.objects.select_related().filter(team=team_id)}
     print playoff_years
@@ -87,6 +88,7 @@ def show_team_history(request, team_id):
     context = RequestContext(request, {
             'team' : team,
             'team_stats' : team_stats,
+            'playoff_stats' : playoff_stats,
             'team_rosters' : team_rosters,
             'championship_years' : championship_years,
             'playoff_years' : playoff_years,

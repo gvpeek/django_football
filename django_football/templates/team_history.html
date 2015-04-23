@@ -7,6 +7,7 @@
 		<h1>{{ team.city }} {{ team.nickname }}</h1>
 
         <h2>Records</h2>
+        <h3>Regular Season</h3>
         <div id="standings_history">
             <table>
                 <tr>
@@ -33,6 +34,32 @@
                 </tr>
             {% endfor %}
             </table>
+            <h3>Playoffs</h3>
+            <table>
+                <tr>
+                    <th>Year</th>
+                    <th>W</th>
+                    <th>L</th>
+                    <th>T</th>
+                    <th>Pct.</th>
+                </tr>
+    		{% for stat in playoff_stats %}
+                {% if stat.year.year in championship_years %}
+                    <tr class="championship">
+                {% else %}
+                    <tr>
+                {% endif %}
+                    {% with stat.year.year as year %}
+                    <th>{{ year }}</th>
+                    <td>{{ stat.wins }}</td>
+                    <td>{{ stat.losses }}</td>
+                    <td>{{ stat.ties }}</td>
+                    <td>{{ stat.pct }}</td>
+                    <td>{{ playoff_years | dictget:year }}</td>
+                    {% endwith %}
+                </tr>
+            {% endfor %}
+            </table>
         </div>
         
         <h2>Rosters</h2>
@@ -40,19 +67,12 @@
             <table>
                 <tr>
                     <td>Year</td>
-                    <td>QB</td>
-                    <td>RB</td>
-                    <td>WR</td>
-                    <td>OG</td>
-                    <td>OT</td>
-                    <td>C</td>
-                    <td>DE</td>
-                    <td>DT</td>
-                    <td>LB</td>
-                    <td>CB</td>
-                    <td>S</td>
-                    <td>K</td>
-                    <td>P</td>
+                    <td>QB</td><td>Age</td><td>Rate</td>
+                    <td>RB</td><td>Age</td><td>Rate</td>
+                    <td>WR</td><td>Age</td><td>Rate</td>
+                    <td>OG</td><td>Age</td><td>Rate</td>
+                    <td>OT</td><td>Age</td><td>Rate</td>
+                    <td>C</td><td>Age</td><td>Rate</td>
                 </tr>
                 {% for roster in team_rosters %}
                     {% cycle 'even' 'odd' as row_style %}
@@ -61,23 +81,44 @@
                     {% else %}
                         <tr class="{{ row_style }}">
                     {% endif %}
-                            <td>{{ roster.year.year }}
-                            <td>{{ roster.qb }}</td>
-                            <td>{{ roster.rb }}</td>
-                            <td>{{ roster.wr }}</td>
-                            <td>{{ roster.og }}</td>
-                            <td>{{ roster.ot }}</td>
-                            <td>{{ roster.c }}</td>
-                            <td>{{ roster.de }}</td>
-                            <td>{{ roster.dt }}</td>
-                            <td>{{ roster.lb }}</td>
-                            <td>{{ roster.cb }}</td>
-                            <td>{{ roster.s }}</td>
-                            <td>{{ roster.k }}</td>
-                            <td>{{ roster.p }}</td>
+                            <td>{{ roster.year.year }}</td>
+                            <td>{{ roster.qb }}</td><td>{{ roster.qb_age }}</td><td>{{ roster.qb_rating }}</td>
+                            <td>{{ roster.rb }}</td><td>{{ roster.rb_age }}</td><td>{{ roster.rb_rating }}</td>
+                            <td>{{ roster.wr }}</td><td>{{ roster.wr_age }}</td><td>{{ roster.wr_rating }}</td>
+                            <td>{{ roster.og }}</td><td>{{ roster.og_age }}</td><td>{{ roster.og_rating }}</td>
+                            <td>{{ roster.ot }}</td><td>{{ roster.ot_age }}</td><td>{{ roster.ot_rating }}</td>
+                            <td>{{ roster.c }}</td><td>{{ roster.c_age }}</td><td>{{ roster.c_rating }}</td>
                         </tr>
                 {% endfor %}
             </table>
+            <table>
+                <tr>
+                    <td>Year</td>
+                    <td>DE</td><td>Age</td><td>Rate</td>
+                    <td>DT</td><td>Age</td><td>Rate</td>
+                    <td>LB</td><td>Age</td><td>Rate</td>
+                    <td>CB</td><td>Age</td><td>Rate</td>
+                    <td>S</td><td>Age</td><td>Rate</td>
+                    <td>K</td><td>Age</td><td>Rate</td>
+                    <td>P</td><td>Age</td><td>Rate</td>
+                </tr>
+                {% for roster in team_rosters %}
+                    {% cycle 'even' 'odd' as row_style %}
+                    {% if roster.year.year in championship_years %}
+                        <tr class="championship {{ row_style }}">
+                    {% else %}
+                        <tr class="{{ row_style }}">
+                    {% endif %}
+                            <td>{{ roster.year.year }}</td>
+                            <td>{{ roster.de }}</td><td>{{ roster.de_age }}</td><td>{{ roster.de_rating }}</td>
+                            <td>{{ roster.dt }}</td><td>{{ roster.dt_age }}</td><td>{{ roster.dt_rating }}</td>
+                            <td>{{ roster.lb }}</td><td>{{ roster.lb_age }}</td><td>{{ roster.lb_rating }}</td>
+                            <td>{{ roster.cb }}</td><td>{{ roster.cb_age }}</td><td>{{ roster.cb_rating }}</td>
+                            <td>{{ roster.s }}</td><td>{{ roster.s_age }}</td><td>{{ roster.s_rating }}</td>
+                            <td>{{ roster.k }}</td><td>{{ roster.k_age }}</td><td>{{ roster.k_rating }}</td>
+                            <td>{{ roster.p }}</td><td>{{ roster.p_age }}</td><td>{{ roster.p_rating }}</td>
+                        </tr>
+                {% endfor %}
         </div>
 	{% endif %}
 	

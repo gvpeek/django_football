@@ -7,6 +7,7 @@ from .models import Team, Roster
 from core.models import Year
 from leagues.models import Game, Schedule, Champions, PlayoffTeams
 from stats.models import GameStats, TeamStats, PlayoffTeamStats
+from stats.utils import calculate_win_percentage
 
 def get_game_outcome(game, team, opponent):
     try:
@@ -81,7 +82,33 @@ def show_team_history(request, team_id):
     playoff_stats = PlayoffTeamStats.objects.filter(team=team_id).order_by('year')
     championship_years = [champion.year.year for champion in Champions.objects.select_related().filter(team=team_id)]
     playoff_years = {playoff.year.year : playoff.seed for playoff in PlayoffTeams.objects.select_related().filter(team=team_id)}
-    print playoff_years
+    summary = {'total_years' : len(team_stats),
+               'reg_wins' : 0,
+               'reg_loss' : 0,
+               'reg_tie' : 0,
+               'reg_pct' : 0,
+               'playoff_wins' : 0,
+               'playoff_loss' : 0,
+               'playoff_tie' : 0,
+               'playoff_pct' : 0,
+               'playoff_app' : len(playoff_years.keys()),
+               'championships' : len(championship_years)
+               }
+    for stat in team_stats:
+        summary['reg_wins'] += stat.wins
+        summary['reg_loss'] += stat.losses
+        summary['reg_tie'] += stat.ties        
+    summary['reg_pct'] = calculate_win_percentage(summary.get('reg_wins'),
+                                                  summary.get('reg_loss'),
+                                                  summary.get('reg_tie'))
+    for stat in playoff_stats:
+        summary['playoff_wins'] += stat.wins
+        summary['playoff_loss'] += stat.losses
+        summary['playoff_tie'] += stat.ties        
+    summary['playoff_pct'] = calculate_win_percentage(summary.get('playoff_wins'),
+                                                      summary.get('playoff_loss'),
+                                                      summary.get('playoff_tie'))
+        
     team_rosters = Roster.objects.filter(team=team_id).order_by('year')
     
     template = loader.get_template('team_history.html')
@@ -92,5 +119,6 @@ def show_team_history(request, team_id):
             'team_rosters' : team_rosters,
             'championship_years' : championship_years,
             'playoff_years' : playoff_years,
+            'summary' : summary
     })
     return HttpResponse(template.render(context))

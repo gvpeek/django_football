@@ -19,9 +19,9 @@
                 </tr>
     		{% for stat in team_stats %}
                 {% if stat.year.year in championship_years %}
-                    <tr class="championship">
+                <tr class="championship">
                 {% else %}
-                    <tr>
+                <tr>
                 {% endif %}
                     {% with stat.year.year as year %}
                     <th>{{ year }}</th>
@@ -33,6 +33,14 @@
                     {% endwith %}
                 </tr>
             {% endfor %}
+                <tr class="totals_row">
+                    <td>{{ summary.total_years }} years</td>
+                    <td>{{ summary.reg_wins }}</td>
+                    <td>{{ summary.reg_loss }}</td>
+                    <td>{{ summary.reg_tie }}</td>
+                    <td>{{ summary.reg_pct|floatformat:3 }}</td>
+                    <td>{{ summary.playoff_app }} ({{ summary.championships }})</td>
+                </tr>
             </table>
             <h3>Playoffs</h3>
             <table>
@@ -45,9 +53,9 @@
                 </tr>
     		{% for stat in playoff_stats %}
                 {% if stat.year.year in championship_years %}
-                    <tr class="championship">
+                <tr class="championship">
                 {% else %}
-                    <tr>
+                <tr>
                 {% endif %}
                     {% with stat.year.year as year %}
                     <th>{{ year }}</th>
@@ -59,6 +67,13 @@
                     {% endwith %}
                 </tr>
             {% endfor %}
+                <tr class="totals_row">
+                    <td>{{ summary.playoff_app }} app</td>
+                    <td>{{ summary.playoff_wins }}</td>
+                    <td>{{ summary.playoff_loss }}</td>
+                    <td>{{ summary.playoff_tie }}</td>
+                    <td>{{ summary.playoff_pct|floatformat:3 }}</td>
+                </tr>
             </table>
         </div>
         

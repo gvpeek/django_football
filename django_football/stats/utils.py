@@ -42,6 +42,9 @@ def get_team_stats(universe, year, team, playoff=False):
             ts.save()       
     return ts
 
+def calculate_win_percentage(wins, losses, ties):
+    return (wins + (ties / 2.0)) / (float(wins + losses + ties))
+
 def update_stats(db_game, game, playoff=False):
     home_db_game_stats = get_game_stats(db_game.universe, db_game.year, db_game, db_game.home_team)
     away_db_game_stats = get_game_stats(db_game.universe, db_game.year, db_game, db_game.away_team)
@@ -90,7 +93,7 @@ def update_stats(db_game, game, playoff=False):
                     db_team_value += game_value
             setattr(db_game_stats,key,game_value)
             setattr(db_team_stats,key,db_team_value)
-        db_team_stats.pct = (db_team_stats.wins + (db_team_stats.ties / 2.0)) / (float(db_team_stats.wins + db_team_stats.losses + db_team_stats.ties))
+        db_team_stats.pct = calculate_win_percentage(db_team_stats.wins, db_team_stats.losses, db_team_stats.ties)
         db_team_stats.completion_pct = (db_team_stats.pass_comp / float(db_team_stats.pass_att))
         db_team_stats.diff = db_team_stats.score - db_team_stats.opp
         db_game_stats.save()

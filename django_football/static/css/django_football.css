@@ -36,6 +36,10 @@ td, th {
   font-weight: bold;
 }
 
+.totals_row {
+    border-top: thin solid;
+}
+
 .even {
   background-color: lightgray;
 }

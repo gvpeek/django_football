@@ -90,7 +90,7 @@
                     <td>C</td><td>Age</td><td>Rate</td>
                 </tr>
                 {% for roster in team_rosters %}
-                    {% cycle 'even' 'odd' as row_style %}
+                    <!-- {% cycle 'even' 'odd' as row_style %} -->
                     {% if roster.year.year in championship_years %}
                         <tr class="championship {{ row_style }}">
                     {% else %}
@@ -118,7 +118,7 @@
                     <td>P</td><td>Age</td><td>Rate</td>
                 </tr>
                 {% for roster in team_rosters %}
-                    {% cycle 'even' 'odd' as row_style %}
+                    <!-- {% cycle 'even' 'odd' as row_style %} -->
                     {% if roster.year.year in championship_years %}
                         <tr class="championship {{ row_style }}">
                     {% else %}

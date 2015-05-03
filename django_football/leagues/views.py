@@ -136,6 +136,7 @@ def create_schedule(league):
         structure.setdefault(team.conference, {})
         structure[team.conference].setdefault(team.division, [])
         structure[team.conference][team.division].append(team.team)
+        print structure
 
     total_weeks = 0
     schedule = []
@@ -147,6 +148,7 @@ def create_schedule(league):
             # used later to calculate number of weeks needed, since odd
             # numbered divisions require an extra week due to each team having a bye
             balanced = 1 - (len(division) % 2)
+            print 'balanced', balanced, 'div len', len(division)
             nbr_weeks = len(division) - balanced
             max_weeks = 2 * nbr_weeks
             # To ensure all league teams play the same number of games

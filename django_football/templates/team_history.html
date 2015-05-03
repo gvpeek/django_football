@@ -97,12 +97,12 @@
                         <tr class="{{ row_style }}">
                     {% endif %}
                             <td>{{ roster.year.year }}</td>
-                            <td>{{ roster.qb }}</td><td>{{ roster.qb_age }}</td><td>{{ roster.qb_rating }}</td>
-                            <td>{{ roster.rb }}</td><td>{{ roster.rb_age }}</td><td>{{ roster.rb_rating }}</td>
-                            <td>{{ roster.wr }}</td><td>{{ roster.wr_age }}</td><td>{{ roster.wr_rating }}</td>
-                            <td>{{ roster.og }}</td><td>{{ roster.og_age }}</td><td>{{ roster.og_rating }}</td>
-                            <td>{{ roster.ot }}</td><td>{{ roster.ot_age }}</td><td>{{ roster.ot_rating }}</td>
-                            <td>{{ roster.c }}</td><td>{{ roster.c_age }}</td><td>{{ roster.c_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.qb.id %}>{{ roster.qb }}</a></td><td>{{ roster.qb_age }}</td><td>{{ roster.qb_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.rb.id %}>{{ roster.rb }}</a></td><td>{{ roster.rb_age }}</td><td>{{ roster.rb_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.wr.id %}>{{ roster.wr }}</a></td><td>{{ roster.wr_age }}</td><td>{{ roster.wr_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.og.id %}>{{ roster.og }}</a></td><td>{{ roster.og_age }}</td><td>{{ roster.og_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.ot.id %}>{{ roster.ot }}</a></td><td>{{ roster.ot_age }}</td><td>{{ roster.ot_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.c.id %}>{{ roster.c }}</a></td><td>{{ roster.c_age }}</td><td>{{ roster.c_rating }}</td>
                         </tr>
                 {% endfor %}
             </table>
@@ -125,13 +125,13 @@
                         <tr class="{{ row_style }}">
                     {% endif %}
                             <td>{{ roster.year.year }}</td>
-                            <td>{{ roster.de }}</td><td>{{ roster.de_age }}</td><td>{{ roster.de_rating }}</td>
-                            <td>{{ roster.dt }}</td><td>{{ roster.dt_age }}</td><td>{{ roster.dt_rating }}</td>
-                            <td>{{ roster.lb }}</td><td>{{ roster.lb_age }}</td><td>{{ roster.lb_rating }}</td>
-                            <td>{{ roster.cb }}</td><td>{{ roster.cb_age }}</td><td>{{ roster.cb_rating }}</td>
-                            <td>{{ roster.s }}</td><td>{{ roster.s_age }}</td><td>{{ roster.s_rating }}</td>
-                            <td>{{ roster.k }}</td><td>{{ roster.k_age }}</td><td>{{ roster.k_rating }}</td>
-                            <td>{{ roster.p }}</td><td>{{ roster.p_age }}</td><td>{{ roster.p_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.de.id %}>{{ roster.de }}</a></td><td>{{ roster.de_age }}</td><td>{{ roster.de_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.dt.id %}>{{ roster.dt }}</a></td><td>{{ roster.dt_age }}</td><td>{{ roster.dt_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.lb.id %}>{{ roster.lb }}</a></td><td>{{ roster.lb_age }}</td><td>{{ roster.lb_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.cb.id %}>{{ roster.cb }}</a></td><td>{{ roster.cb_age }}</td><td>{{ roster.cb_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.s.id %}>{{ roster.s }}</a></td><td>{{ roster.s_age }}</td><td>{{ roster.s_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.k.id %}>{{ roster.k }}</a></td><td>{{ roster.k_age }}</td><td>{{ roster.k_rating }}</td>
+                            <td><a href={% url 'people.views.show_player_history' roster.p.id %}>{{ roster.p }}</a></td><td>{{ roster.p_age }}</td><td>{{ roster.p_rating }}</td>
                         </tr>
                 {% endfor %}
         </div>

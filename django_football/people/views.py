@@ -9,6 +9,8 @@ from copy import deepcopy
 from collections import OrderedDict, deque
 
 from django.shortcuts import render
+from django.http import HttpResponse
+from django.template import RequestContext, loader
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import F
@@ -20,6 +22,8 @@ from .tasks import calculate_future_ratings
 from core.models import Year
 from stats.models import TeamStats
 from teams.models import Team, Roster
+
+LOGGER = logging.getLogger('django.request')
 
 # TODO see if processing speed increases by converting stub to dictionary, removing need for string & int translations
 def create_player_stub(number):
@@ -83,10 +87,6 @@ def seed_universe_players(universe, players_per_year):
         for a number of years, with the remaining unretired players being instantiated into full player records and 
         stored in the database.
     '''
-
-    # Main Logic
-    logger = logging.getLogger('django.request')
-    
     pl=[]
     for x in xrange(40):
         pl = [age_player_stub(player) for player in pl]        
@@ -116,13 +116,11 @@ def seed_universe_players(universe, players_per_year):
 
     Player.objects.bulk_create(players)
     
-    logger.info('{0} players created in universe {1}.'.format(len(players), universe.name))
+    LOGGER.info('{0} players created in universe {1}.'.format(len(players), universe.name))
 
 def create_players(universe, number):
     ''' This fuction is used to create players once a universe has already been initially seeded.
     '''
-    logger = logging.getLogger('django.request')
-
     players = [Player(universe=universe,
                       first_name=names.first_name(),
                       last_name=names.last_name(),
@@ -137,7 +135,7 @@ def create_players(universe, number):
 
     Player.objects.bulk_create(players)
     
-    logger.info('{0} players created in universe {1}.'.format(len(players), universe.name))
+    LOGGER.info('{0} players created in universe {1}.'.format(len(players), universe.name))
 
 def determine_draft_needs(preference, roster):
     ''' Prioritizes positions to be drafted based on current roster. Vacant spots are put first then 
@@ -154,9 +152,7 @@ def determine_draft_needs(preference, roster):
             
     return preference
     
-def draft_players(universe):
-    logger = logging.getLogger('django.request')
-    
+def draft_players(universe):    
     current_year = Year.objects.get(universe=universe,
                                     current_year=True)
     previous_year=None
@@ -164,7 +160,7 @@ def draft_players(universe):
         previous_year = Year.objects.get(universe=universe,
                                          year=(current_year.year - 1))
     except ObjectDoesNotExist, e:
-        logger.info('No previous year - {0}'.format(e))
+        LOGGER.info('No previous year - {0}'.format(e))
 
 
     start_time = time.time()
@@ -175,14 +171,14 @@ def draft_players(universe):
         for team_stat in team_order:
             teams.append(team_stat.team)
     except ObjectDoesNotExist, e:
-        logger.info('No previous team stats - {0}'.format(e))
+        LOGGER.info('No previous team stats - {0}'.format(e))
 
     if not teams:
         teams = Team.objects.filter(universe=universe)
         shuffle(list(teams))
         
     elapsed_time = time.time() - start_time
-    logger.info("Universe {0} draft order determined in {1} seconds".format(universe.name, elapsed_time))    
+    LOGGER.info("Universe {0} draft order determined in {1} seconds".format(universe.name, elapsed_time))    
     
     start_time = time.time()
     draft_preference = OrderedDict()
@@ -208,7 +204,7 @@ def draft_players(universe):
                 
                 
     elapsed_time = time.time() - start_time
-    logger.info("Universe {0} draft preferences determined in {1} seconds".format(universe.name, elapsed_time))  
+    LOGGER.info("Universe {0} draft preferences determined in {1} seconds".format(universe.name, elapsed_time))  
     
     ## create map of positions to available players
     available_players = {}
@@ -250,14 +246,14 @@ def draft_players(universe):
                         current_player.signed=False
                         current_player.save()
                         heapq.heappush(available_players[pick_position], (100 - current_player.ratings, current_player))
-                        # logger.info('{0} {1} {2} {3} {4} was cut.'.format(team.city,
-                        #                                                   team.nickname,
-                        #                                                   pick_position,
-                        #                                                   current_player.first_name,
-                        #                                                   current_player.last_name))
-                    setattr(roster,pick_position.lower(),player)
-                    setattr(roster,pick_position.lower()+'_age',player.age)
-                    setattr(roster,pick_position.lower()+'_rating',player.ratings)
+                        LOGGER.info('{0} {1} {2} {3} {4} was cut.'.format(team.city,
+                                                                          team.nickname,
+                                                                          pick_position,
+                                                                          current_player.first_name,
+                                                                          current_player.last_name))
+                    setattr(roster, pick_position.lower(), player)
+                    setattr(roster, pick_position.lower()+'_age', player.age)
+                    setattr(roster, pick_position.lower()+'_rating', player.ratings)
                     roster.save()
                     player.signed=True
                     player.save()
@@ -265,13 +261,13 @@ def draft_players(universe):
                 else:
                     heapq.heappush(available_players[pick_position], (100 - player.ratings, player))
                     
-                    # method = 'drafted' if player.age == 23 else 'signed'
-                    # logger.info('{0} {1} {2} {3} {4} was {5}.'.format(team.city,
-                    #                                                   team.nickname,
-                    #                                                   pick_position,
-                    #                                                   player.first_name,
-                    #                                                   player.last_name,
-                    #                                                   method))
+                    method = 'drafted' if player.age == 23 else 'signed'
+                    LOGGER.info('{0} {1} {2} {3} {4} was {5}.'.format(team.city,
+                                                                      team.nickname,
+                                                                      pick_position,
+                                                                      player.first_name,
+                                                                      player.last_name,
+                                                                      method))
 
 def _check_rating_range(player,range):
     ''' function to check if player is within the rating range for their given age range. If a player
@@ -286,8 +282,6 @@ def _check_rating_range(player,range):
 
 # @transaction.commit_manually
 def age_players(universe):
-    logger = logging.getLogger('django.request')
-    
     min_max_ratings = get_min_max_ratings()
 
     # active_players = []
@@ -296,7 +290,7 @@ def age_players(universe):
                                            universe=universe).update(age = F('age') + 1, 
                                                                      ratings = F('future_ratings'))
     elapsed_time = time.time() - start_time
-    logger.info("Players age and ratings in {0} seconds".format(elapsed_time))
+    LOGGER.info("Players age and ratings in {0} seconds".format(elapsed_time))
 
     players_retired = 0
 
@@ -312,8 +306,30 @@ def age_players(universe):
                               age__lte=age[1], 
                               ratings__gt=ratings[1]).update(ratings=ratings[1])
     elapsed_time = time.time() - start_time
-    logger.info("Players normailzed in {0} seconds".format(elapsed_time))
+    LOGGER.info("Players normailzed in {0} seconds".format(elapsed_time))
     
     calculate_future_ratings.delay(universe)
     
-    logger.info('{0} players processed. {1} players retired'.format(active_players, players_retired))
+    LOGGER.info('{0} players processed. {1} players retired'.format(active_players, players_retired))
+    
+def show_player_history(request, player_id):
+    player = Player.objects.get(id=int(player_id))
+    
+    rosters = Roster.objects.filter(**{player.position.lower() : player_id}).order_by('year')
+    
+    history = []
+    for roster in rosters:
+        history.append({'year' : roster.year.year,
+                        'team' : roster.team,
+                        'age' : getattr(roster, '{0}_age'.format(player.position.lower())),
+                        'rating' : getattr(roster, '{0}_rating'.format(player.position.lower()))
+                        })
+    
+    LOGGER.info(rosters)
+    
+    template = loader.get_template('player_history.html')
+    context = RequestContext(request, {
+            'player' : player,
+            'history' : history
+    })
+    return HttpResponse(template.render(context))

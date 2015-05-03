@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+
+	<h1>{{ player.first_name }} {{ player.last_name }}</h1>
+    <h2>Age: {{ player.age }} - Rating: {{ player.ratings }} - {% if player.signed %} Signed {% else %} Unsigned {% endif %}</h2>
+    <h2>Position: {{ player.position }} - Status: {% if player.retired %} Retired {% else %} Active {% endif %}</h2>
+    
+    <table>
+        <tr>
+            <th>Year</th>
+            <th>Team</th>
+            <th>Age</th>
+            <th>Rating</th>
+        </tr>
+    {% for year in history %}
+        <tr>
+            <td>{{ year.year }}</td>
+            <td>{{ year.team }}</td>
+            <td>{{ year.age }}</td>
+            <td>{{ year.rating }}</td>
+        </tr>
+    {% endfor %}
+    </table>
+	
+{% endblock %}

@@ -18,6 +18,8 @@ urlpatterns = patterns('',
     
     url(r'^league/', include('leagues.urls')),
     
+    url(r'^people/', include('people.urls')),
+    
     url(r'team/', include('teams.urls')),
     
     url(r'^stats/', include('stats.urls')),

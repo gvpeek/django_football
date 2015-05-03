@@ -43,7 +43,10 @@ def get_team_stats(universe, year, team, playoff=False):
     return ts
 
 def calculate_win_percentage(wins, losses, ties):
-    return (wins + (ties / 2.0)) / (float(wins + losses + ties))
+    if (wins + losses + ties):
+        return (wins + (ties / 2.0)) / (float(wins + losses + ties))
+    else:
+        return .000
 
 def update_stats(db_game, game, playoff=False):
     home_db_game_stats = get_game_stats(db_game.universe, db_game.year, db_game, db_game.home_team)

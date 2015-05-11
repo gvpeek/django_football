@@ -151,19 +151,8 @@ def determine_draft_needs(preference, roster):
             preference.append(position)
             
     return preference
-    
-def draft_players(universe):    
-    current_year = Year.objects.get(universe=universe,
-                                    current_year=True)
-    previous_year=None
-    try:
-        previous_year = Year.objects.get(universe=universe,
-                                         year=(current_year.year - 1))
-    except ObjectDoesNotExist, e:
-        LOGGER.info('No previous year - {0}'.format(e))
 
-
-    start_time = time.time()
+def get_team_draft_order(universe, previous_year):
     teams=[]
     try:
         team_order=TeamStats.objects.filter(universe=universe,
@@ -177,6 +166,21 @@ def draft_players(universe):
         teams = Team.objects.filter(universe=universe)
         shuffle(list(teams))
         
+    return teams
+
+def draft_players(universe):    
+    current_year = Year.objects.get(universe=universe,
+                                    current_year=True)
+    previous_year=None
+    try:
+        previous_year = Year.objects.get(universe=universe,
+                                         year=(current_year.year - 1))
+    except ObjectDoesNotExist, e:
+        LOGGER.info('No previous year - {0}'.format(e))
+
+
+    start_time = time.time()
+    teams = get_team_draft_order(universe, previous_year)
     elapsed_time = time.time() - start_time
     LOGGER.info("Universe {0} draft order determined in {1} seconds".format(universe.name, elapsed_time))    
     
@@ -217,6 +221,7 @@ def draft_players(universe):
                                         signed=False,
                                         age__gte=23)
         for player in players:
+            LOGGER.info('player {0} signed {1}'.format(player,  player.signed))
             heapq.heappush(player_heap, (100-player.ratings, player))
         
         available_players[position] = player_heap
@@ -237,8 +242,10 @@ def draft_players(universe):
                 #                                 signed=False,
                 #                                 age__gte=23).order_by('ratings').reverse()
                 roster = rosters[team]
+                LOGGER.info('available players', available_players[pick_position])
                 player = heapq.heappop(available_players[pick_position])[1]
                 current_player = getattr(roster, pick_position.lower())
+                LOGGER.info('current player', current_player)
                 if not current_player or \
                         (player.ratings >  current_player.ratings): # and player.age < current_player.age 
                     # current_player = Player.objects.get(id=roster.pick_position.lower().id)
@@ -255,12 +262,10 @@ def draft_players(universe):
                     setattr(roster, pick_position.lower()+'_age', player.age)
                     setattr(roster, pick_position.lower()+'_rating', player.ratings)
                     roster.save()
+                    LOGGER.info('roster for position', getattr(roster, pick_position.lower()))
                     player.signed=True
                     player.save()
                     selected = True
-                else:
-                    heapq.heappush(available_players[pick_position], (100 - player.ratings, player))
-                    
                     method = 'drafted' if player.age == 23 else 'signed'
                     LOGGER.info('{0} {1} {2} {3} {4} was {5}.'.format(team.city,
                                                                       team.nickname,
@@ -268,6 +273,9 @@ def draft_players(universe):
                                                                       player.first_name,
                                                                       player.last_name,
                                                                       method))
+                else:
+                    heapq.heappush(available_players[pick_position], (100 - player.ratings, player))
+                    LOGGER.info('returned to heap', player)
 
 def _check_rating_range(player,range):
     ''' function to check if player is within the rating range for their given age range. If a player

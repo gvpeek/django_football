@@ -8,6 +8,7 @@ make_free_agent.short_description = "Make selected players free agents"
 
 class PlayerAdmin(admin.ModelAdmin):
     list_display = ('last_name', 'first_name', 'position', 'ratings', 'age', 'signed', 'retired', 'universe',)
+    list_filter = ('universe',)
 
     actions = [make_free_agent]
     

@@ -27,6 +27,7 @@ class RosterAdmin(admin.ModelAdmin):
                     'k', 'k_age', 'k_rating', 
                     'p', 'p_age', 'p_rating', 
                     'universe')
+    list_filter = ('universe',)
 
 class PlaybookAdmin(admin.ModelAdmin):
     list_display = ('name', 'plays')

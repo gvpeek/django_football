@@ -255,9 +255,12 @@ def play_game(id, playoff=False):
     db_game = Game.objects.get(id=id)
     home_team = prepare_team_for_game(db_game.home_team, db_game.away_team, db_game)
     away_team = prepare_team_for_game(db_game.away_team, db_game.home_team, db_game)
+    use_overtime=db_game.use_overtime or playoff
+    number_of_overtime_periods = 0 if playoff else db_game.number_of_overtime_periods
     game = python_football.new_game(home_team=home_team, 
                                     away_team=away_team, 
-                                    use_overtime=db_game.use_overtime)
+                                    use_overtime=use_overtime,
+                                    number_of_overtime_periods=number_of_overtime_periods)
     game.start_game()
     
     ## stores stats and returns losing team

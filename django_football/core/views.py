@@ -3,14 +3,14 @@ import time
 
 from random import randint, choice
 
-from django.shortcuts import render, redirect
+from django.shortcuts import redirect
 from django.http import HttpResponse
 from django.template import RequestContext, loader
 
 from .models import Universe, Year
 from .forms import CreateUniverseForm
 from people.views import seed_universe_players, draft_players, age_players, create_players
-from people.tasks import calculate_future_ratings
+from people.tasks import calculate_future_ratings, sign_players
 from teams.utils import initialize_team_source_data, create_initial_universe_teams
 from leagues.views import (create_initial_universe_league, create_schedule, 
                            copy_league_memberships, copy_rosters, champion_determined)
@@ -40,22 +40,16 @@ def universe_create(request):
     elapsed_time = time.time() - start_time
     logger.info("Universe {0} players seeded in {1} seconds".format(universe.name, elapsed_time))
     
-    calculate_future_ratings.delay(universe)
-    
     initialize_team_source_data()
 
     create_initial_universe_teams(universe, 'pro')
     create_initial_universe_league(universe.id, choice(league_names), 'pro')
     year_start(universe)
 
+    calculate_future_ratings.delay(universe)
+
     return redirect('index')
-    
-    # universe_list = Universe.objects.all()
-    # template = loader.get_template('index.html')
-    # context = RequestContext(request, {
-    #         'universe_list' : universe_list,
-    # })
-    # return HttpResponse(template.render(context))
+
         
 def year_create(universe, year=None):
     year = Year(universe=universe,
@@ -123,7 +117,6 @@ def advance_year(request,universe_id):
                 create_schedule(league)
         elapsed_time = time.time() - start_time
         logger.info("Universe {0} league schedules created in {1} seconds".format(universe.name, elapsed_time))
-                
         return redirect('show_leagues', universe_id=universe_id)
         
 def show_leagues(request, universe_id):

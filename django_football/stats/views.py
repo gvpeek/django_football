@@ -12,7 +12,7 @@ from leagues.models import Game, Schedule
 
 logger = logging.getLogger('django.request')
 
-def game_stats(request, game_id):    
+def game_stats(request, game_id):
     game = Game.objects.get(id=game_id)
     team_stats = GameStats.objects.filter(game=game)
     try:
@@ -20,12 +20,12 @@ def game_stats(request, game_id):
     except ObjectDoesNotExist, e:
         logger.info('Stats being retrieved for a game not associated with a league.')
     
-    if team_stats[0].team_id == game.home_team_id:
-        home_team_stats = team_stats[0]
-        away_team_stats = team_stats[1]
+    if team_stats.first().team_id == game.home_team_id:
+        home_team_stats = team_stats.first()
+        away_team_stats = team_stats.last()
     else:
-        home_team_stats = team_stats[1]
-        away_team_stats = team_stats[0]
+        home_team_stats = team_stats.last()
+        away_team_stats = team_stats.first()
         
     home_score_by_period = literal_eval(home_team_stats.score_by_period)
     home_score_by_period.append(home_team_stats.score)

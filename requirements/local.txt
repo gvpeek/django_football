@@ -2,3 +2,5 @@
 -r test.txt
 django-debug-toolbar==1.2.1
 Sphinx==1.2.2
+pytest==2.7.1
+django-extensions==1.5.5

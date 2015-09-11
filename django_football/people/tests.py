@@ -136,7 +136,6 @@ class PlayerTest(TestCase):
         print vars(self.player1)
         print vars(self.player2)
 
-class RatingRangeTest(TestCase):
     def test_get_min_max_ratings(self):
         self.assertEqual(get_min_max_ratings(), [((11,14),(20,50)),
                                                  ((15,18),(30,60)),
@@ -147,3 +146,8 @@ class RatingRangeTest(TestCase):
         self.assertEqual(_check_rating_range_stub(80, (45,75), ''), (75, ''))
         self.assertEqual(_check_rating_range_stub(75, (45,75), ''), (75, ''))
         self.assertEqual(_check_rating_range_stub(40, (45,75), ''), (40, 'R'))
+        
+        
+class DraftTest(TestCase):
+    def test_determine_draft_order(self):
+        pass

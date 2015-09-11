@@ -3,16 +3,14 @@ import logging
 import time
 import heapq
 
-from math import floor, ceil, pow
+from math import floor, pow
 from random import randint, choice, shuffle
 from copy import deepcopy
 from collections import OrderedDict, deque
 
-from django.shortcuts import render
 from django.http import HttpResponse
 from django.template import RequestContext, loader
 from django.core.exceptions import ObjectDoesNotExist
-from django.db import transaction
 from django.db.models import F
 
 import names
@@ -204,8 +202,7 @@ def draft_players(universe):
         draft_preference[team] = deque()
         draft_preference[team].extend(determine_draft_needs(deepcopy(json.loads(team.draft_position_order)), roster))
         if nbr_positions < len(draft_preference[team]):
-                nbr_positions=len(draft_preference[team])
-                
+                nbr_positions=len(draft_preference[team])           
                 
     elapsed_time = time.time() - start_time
     LOGGER.info("Universe {0} draft preferences determined in {1} seconds".format(universe.name, elapsed_time))  
@@ -225,8 +222,7 @@ def draft_players(universe):
             heapq.heappush(player_heap, (100-player.ratings, player))
         
         available_players[position] = player_heap
-        
-    
+            
     ## need to set team here for first check of presence of key
     team = draft_preference.keys()[0]
     while draft_preference:
@@ -236,19 +232,11 @@ def draft_players(universe):
             selected = False
             while not selected and draft_preference[team]:
                 pick_position = draft_preference[team].popleft()
-                # players = Player.objects.filter(universe=universe,
-                #                                 position=pick_position,
-                #                                 retired=False,
-                #                                 signed=False,
-                #                                 age__gte=23).order_by('ratings').reverse()
                 roster = rosters[team]
-                LOGGER.info('available players', available_players[pick_position])
                 player = heapq.heappop(available_players[pick_position])[1]
                 current_player = getattr(roster, pick_position.lower())
-                LOGGER.info('current player', current_player)
                 if not current_player or \
-                        (player.ratings >  current_player.ratings): # and player.age < current_player.age 
-                    # current_player = Player.objects.get(id=roster.pick_position.lower().id)
+                        (player.ratings >  current_player.ratings):
                     if current_player:
                         current_player.signed=False
                         current_player.save()
@@ -262,8 +250,7 @@ def draft_players(universe):
                     setattr(roster, pick_position.lower()+'_age', player.age)
                     setattr(roster, pick_position.lower()+'_rating', player.ratings)
                     roster.save()
-                    LOGGER.info('roster for position', getattr(roster, pick_position.lower()))
-                    player.signed=True
+                    player.signed = True
                     player.save()
                     selected = True
                     method = 'drafted' if player.age == 23 else 'signed'
@@ -275,7 +262,7 @@ def draft_players(universe):
                                                                       method))
                 else:
                     heapq.heappush(available_players[pick_position], (100 - player.ratings, player))
-                    LOGGER.info('returned to heap', player)
+                
 
 def _check_rating_range(player,range):
     ''' function to check if player is within the rating range for their given age range. If a player

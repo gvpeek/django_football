@@ -104,7 +104,12 @@ def advance_year(request,universe_id):
         copy_rosters(universe, year, new_year)
         elapsed_time = time.time() - start_time
         logger.info("Universe {0} rosters copied in {1} seconds".format(universe.name, elapsed_time))
-        
+
+        start_time = time.time()
+        sign_players(universe, new_year)
+        elapsed_time = time.time() - start_time
+        logger.info("Universe {0} players signed in {1} seconds".format(universe.name, elapsed_time))
+
         start_time = time.time()
         draft_players(universe)
         elapsed_time = time.time() - start_time
@@ -118,7 +123,7 @@ def advance_year(request,universe_id):
         elapsed_time = time.time() - start_time
         logger.info("Universe {0} league schedules created in {1} seconds".format(universe.name, elapsed_time))
         return redirect('show_leagues', universe_id=universe_id)
-        
+
 def show_leagues(request, universe_id):
         universe = Universe.objects.get(id=universe_id)
         leagues = League.objects.filter(universe=universe)

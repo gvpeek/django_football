@@ -65,8 +65,6 @@ def show_team_detail(request, team_id, year):
         for week in weeks:
             if week not in team_schedule:
                 team_schedule[week] = {'opponent' : 'Bye', 'outcome' : ''}
-                
-        print team_schedule
 
         template = loader.get_template('team_detail.html')
         context = RequestContext(request, {

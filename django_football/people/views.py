@@ -218,7 +218,7 @@ def draft_players(universe):
                                         signed=False,
                                         age__gte=23)
         for player in players:
-            LOGGER.info('player {0} signed {1}'.format(player,  player.signed))
+            # LOGGER.info('player {0} signed {1}'.format(player,  player.signed))
             heapq.heappush(player_heap, (100-player.ratings, player))
         
         available_players[position] = player_heap
@@ -290,7 +290,7 @@ def age_players(universe):
     players_retired = 0
 
     start_time = time.time()
-    for age,ratings in min_max_ratings:
+    for age, ratings in min_max_ratings:
         players_retired += Player.objects.filter(retired=False,
                                                  universe=universe,
                                                  age__gte=age[0],

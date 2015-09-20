@@ -1,11 +1,16 @@
 from __future__ import absolute_import
 
+import logging
+
 from random import randint
 
 from celery import shared_task
 
 from .models import Player
 from teams.models import Roster
+
+
+LOGGER = logging.getLogger('django.request')
 
 
 def determine_player_rating(age, apex_age, ratings, growth_rate, declination_rate):
@@ -44,6 +49,20 @@ def sign_players(universe, current_year):
             player = getattr(roster, position.lower())
             db_player = Player.objects.get(id=player.id)
             if not db_player.signed:
-                print db_player.first_name, db_player.last_name, 'not signed!!!!'
+                LOGGER.info('{0} {1} {2} - {3} {4} ({5}) not signed!!!!'.format(position,
+                                                                                roster.team.city,
+                                                                                roster.team.nickname,
+                                                                                db_player.first_name,
+                                                                                db_player.last_name,
+                                                                                db_player.ratings))
                 db_player.signed = True
+                db_player.save()
+            if db_player.retired:
+                LOGGER.info('{0} {1} {2} - {3} {4} ({5}) retired!!!!'.format(position,
+                                                                             roster.team.city,
+                                                                             roster.team.nickname,
+                                                                             db_player.first_name,
+                                                                             db_player.last_name,
+                                                                             db_player.ratings))
+                db_player.signed = False
                 db_player.save()
